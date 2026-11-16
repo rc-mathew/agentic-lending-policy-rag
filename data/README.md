@@ -21,37 +21,38 @@ So for scheduled commercial banks:
   manifest. That gives the gold set good trap questions ("what does the current rule say?")
   and lets the retriever filter on `status`.
 
-## Target corpus (15–20 PDFs, Tue 17 Nov)
+## The corpus (18 documents)
 
-Titles below are what to look for; confirm the exact name on rbi.org.in → Regulations →
-Commercial Banking → Master Directions, since I could not open the site from my workspace.
+`sources.csv` is the list. To fetch everything:
 
-**RBI: consolidated Master Directions for commercial banks (aim for 8–10)**
+```bash
+python scripts/download_corpus.py
+```
 
-| Topic | Why it's in the corpus |
-|---|---|
-| Credit Facilities | Core lending rules: loan restrictions, limits, sanction |
-| Responsible Business Conduct (fair practices, grievance) | Fair Practices Code, penal charges, release of property documents |
-| Interest Rate on Advances | Floating-rate resets, EMI vs tenure choice, benchmark linkage |
-| Asset Classification, Provisioning and Income Recognition | NPA rules: SMA/NPA days-past-due, provisioning |
-| Know Your Customer | Onboarding and due diligence questions |
-| Digital Lending | LSPs, Key Fact Statement, cooling-off, default loss guarantee |
-| Credit Risk Management / Concentration or exposure norms | Exposure limits, multi-hop questions |
-| Capital Adequacy (credit risk weights) | Risk weights on consumer credit |
-| Co-lending (if consolidated separately) | Multi-party lending questions |
-| Gold-loan / lending against gold collateral | LTV caps; good for calculation questions |
+It checks each file is a real PDF, then records size, sha256 and page count in the manifest.
+Anything that fails is printed with what to do.
 
-**Bank-published policies (aim for 5–8)**: look on each bank's site for "Fair Practices Code",
-"Loan Policy", "Interest Rate Policy", "Grievance Redressal Policy", "Recovery / Collection
-Policy". Mix public- and private-sector banks (e.g. SBI, Bank of Baroda, HDFC Bank, ICICI Bank,
-Axis Bank). Bank documents restate RBI rules in their own words, which is what makes
-multi-hop questions possible.
+- **11 RBI consolidated Directions for commercial banks** (28 Nov 2025, latest updates to
+  Jul 2026): Credit Facilities, Responsible Business Conduct, Interest Rates on Advances,
+  IRACP, Credit Risk Management, Concentration Risk Management, KYC, Resolution of Stressed
+  Assets, Wilful Defaulters, Credit Information Reporting, Credit and Debit Cards.
+- **7 bank policies**: Fair Practices Codes from SBI, ICICI, Axis, IDFC FIRST, Bandhan and CSB
+  (public, large private, small private and small finance banks), plus a regional rural
+  bank's collection and repossession policy. They restate RBI rules in their own words,
+  which is what multi-hop questions need.
 
-**Optional (1–2)**: a CIBIL/credit-bureau consumer FAQ or an NHB/housing-finance FAQ, to test
-how the system handles a non-RBI source.
+Left out on purpose:
 
-Keep the total under ~1,500 pages. Embedding is fine at that size on CPU; past that, ingestion
-iterations get slow on an 8 GB laptop.
+- **The 2026 IRACP Directions** (expected-credit-loss based, effective later). Two versions
+  of the NPA rules in one index would muddy week 1. Worth adding in week 3 as an
+  "effective date" test.
+- **Repealed circulars.** RBI has removed the old PDFs (e.g. the 2003 Fair Practices Code
+  guidelines link now redirects to the homepage). To add a trap document, open the old
+  circular's HTML page on rbi.org.in, print it to PDF, and add a row with `status=repealed`.
+
+Size check: check the total page count the script prints. Under ~1,500 pages keeps
+re-indexing quick on an 8 GB laptop; if it is far above that, drop Credit Cards and Wilful
+Defaulters first.
 
 ## Manifest columns (`sources.csv`)
 
@@ -65,5 +66,7 @@ iterations get slow on an 8 GB laptop.
 | `issued_date` | `2025-11-28` |
 | `updated_date` | latest "updated as on" date, if any |
 | `status` | `current` or `repealed` |
-| `url` | page you downloaded it from |
-| `pages` | filled in automatically by the ingestion script |
+| `url` | direct PDF link used by the download script |
+| `page_url` | RBI page for the document, to check for newer versions |
+| `pages`, `bytes`, `sha256`, `downloaded_at` | filled in by `download_corpus.py` |
+| `notes` | why it is in the corpus, or caveats about the link |
