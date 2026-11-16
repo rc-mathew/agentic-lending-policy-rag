@@ -138,7 +138,7 @@ def main() -> int:
     for name, ok, detail in RESULTS:
         print(f"  {'PASS' if ok else 'FAIL'}  {name:32} {detail}")
     failed = [r for r in RESULTS if not r[1]]
-    if any(n.startswith("Gemini") and "not found" in d.lower() for n, ok, d in failed):
+    if any(n.startswith("Gemini") and ("404" in d or "not found" in d.lower() or "not_found" in d.lower()) for n, ok, d in failed):
         list_models_hint()
     print(f"\n{len(RESULTS) - len(failed)}/{len(RESULTS)} checks passed.")
     return 1 if failed else 0
