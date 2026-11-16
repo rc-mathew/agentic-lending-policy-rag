@@ -7,7 +7,9 @@ Cleaning is generic (no per-document rules), so a new PDF needs no code change:
    "6" split across lines (ICICI's "Page 2 | 6").
 3. Drop running headers and footers: a line that appears near the top or bottom of at least half
    of a document's pages (digits ignored, so "Ver1.0 - Apr 2026" and page counters still match).
-4. Re-join words hyphenated across a line break ("borrow-\\ner" -> "borrower").
+4. Re-join words hyphenated across a line break ("borrow-\\ner" -> "borrower"), and drop the
+   footnote number glued to RBI amendment brackets ("1[(ia) ..." -> "[(ia) ..."). The footnote
+   lines themselves ("1 Inserted with effect from ...") stay: they carry amendment dates.
 5. Fall back to pdfplumber for a document whose pypdf output is broken into word fragments
    (ICICI's PDF: "non\\n acceptance", "pre\\n -\\n payment"). pypdf stays the default: it is
    several times faster and clean on the other documents.
@@ -32,6 +34,7 @@ MIN_PAGES_FOR_REPEATS = 3
 _DOT_LEADER = re.compile(r"(\.\s?){5,}\s*\d+\s*$")
 _PAGE_FURNITURE = re.compile(r"^(page|\||\d{1,4}|page\s*\d{1,4}(\s*(\||of)\s*\d{1,4})?)$", re.IGNORECASE)
 _HYPHEN_BREAK = re.compile(r"([a-z])-\n([a-z])")
+_AMENDMENT_MARK = re.compile(r"(?<![\w.(])\d{1,3}\[")
 FRAGMENT_SHARE = 0.05  # above this share of fragment lines, re-extract with pdfplumber
 
 
@@ -94,6 +97,7 @@ def clean_page(lines: list[str], running: set[str]) -> tuple[str, int]:
         kept.append(ln)
     text = "\n".join(kept)
     text = _HYPHEN_BREAK.sub(r"\1\2", text)
+    text = _AMENDMENT_MARK.sub("[", text)
     text = re.sub(r"[ \t]+\n", "\n", text)
     text = re.sub(r"\n{3,}", "\n\n", text).strip()
     return text, removed

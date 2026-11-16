@@ -58,3 +58,9 @@ def test_fragment_share_flags_broken_extraction():
     broken = [["processing fees", " 1", "non", " acceptance", "pre", " -", " payment"]]
     assert fragment_share(clean) == 0.0
     assert fragment_share(broken) > 0.05
+
+
+def test_amendment_footnote_number_dropped():
+    lines = ["a", "b", "c", "d", "1[(ia) 'Acquisition Finance' shall mean", "e", "f", "g", "h"]
+    text, _ = clean_page(lines, set())
+    assert "[(ia) 'Acquisition Finance'" in text and "1[" not in text
