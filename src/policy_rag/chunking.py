@@ -11,7 +11,9 @@ one string, with a char-offset -> page map, so each chunk records the page range
                   records "Chapter > Section" as the chunk's context. Over-long paragraphs fall back
                   to the recursive splitter.
 
-All chunks stay well under BGE-small's 512-token limit (~4 chars per token in this corpus).
+Token limit: BGE-small reads at most 512 tokens and silently drops the rest. Characters are a poor
+guide here (number-heavy tables run ~2.5 chars per token), so every strategy takes a token counter
+and re-splits any chunk whose context + text exceeds MAX_TOKENS, keeping its page range true.
 `context` is prefixed to the text at embedding time: the document title for every strategy, plus
 chapter and section for section_aware.
 """
@@ -20,12 +22,18 @@ from __future__ import annotations
 
 import bisect
 import re
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import asdict, dataclass
 
 SIZE = 1200
 OVERLAP = 150
 SECTION_MAX = 1500
+MAX_TOKENS = 500  # headroom under 512 for the [CLS]/[SEP] tokens
+
+
+def estimate_tokens(text: str) -> int:
+    """Fallback counter when the real tokenizer is unavailable: deliberately conservative."""
+    return len(text) // 3 + 1
 
 _CHAPTER = re.compile(r"^(Chapter\s+[IVXLC]+[A-Z]?\b.*)$")
 _SECTION = re.compile(r"^([A-Z]{1,2}\.\s+[A-Z][^.]{2,85})$")
@@ -183,7 +191,29 @@ def section_spans(text: str, max_size: int = SECTION_MAX) -> list[tuple[int, int
     return final
 
 
-def chunk_documents(docs: list[DocText], strategy: str) -> list[Chunk]:
+def _fit_tokens(
+    text: str, spans: list[tuple[int, int, str]], count: Callable[[str], int], limit: int
+) -> list[tuple[int, int, str]]:
+    """Re-split any span whose context + text is over the token limit."""
+    out: list[tuple[int, int, str]] = []
+    for a, b, ctx in spans:
+        n = count(f"{ctx}\n\n{text[a:b]}")
+        if n <= limit:
+            out.append((a, b, ctx))
+            continue
+        budget = limit - count(ctx) - 4
+        size = max(50, int((b - a) * budget / n * 0.9))
+        sub = [(a + x, a + y, ctx) for x, y in recursive_spans(text[a:b], size=size, overlap=0)]
+        out.extend(_fit_tokens(text, sub, count, limit) if size > 50 else sub)
+    return out
+
+
+def chunk_documents(
+    docs: list[DocText],
+    strategy: str,
+    count_tokens: Callable[[str], int] = estimate_tokens,
+    max_tokens: int = MAX_TOKENS,
+) -> list[Chunk]:
     chunks: list[Chunk] = []
     for doc in docs:
         title = _title_context(doc)
@@ -195,6 +225,7 @@ def chunk_documents(docs: list[DocText], strategy: str) -> list[Chunk]:
             spans = [(a, b, f"{title} > {c}" if c else title) for a, b, c in section_spans(doc.text)]
         else:
             raise ValueError(f"unknown strategy {strategy!r}")
+        spans = _fit_tokens(doc.text, spans, count_tokens, max_tokens)
         for i, (a, b, ctx) in enumerate(spans):
             if doc.text[a:b].strip():
                 chunks.append(_make(doc, strategy, i, a, b, ctx))

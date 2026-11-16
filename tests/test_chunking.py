@@ -71,3 +71,13 @@ def test_every_strategy_keeps_all_words(strategy):
     joined = " ".join(c.text for c in chunk_documents([doc], strategy))
     for word in ("cooling-off", "08:00", "90 percent"):
         assert word in joined
+
+
+@pytest.mark.parametrize("strategy", ["fixed", "recursive", "section_aware"])
+def test_token_limit_enforced(strategy):
+    (doc,) = assemble(_pages())
+    def count(text):
+        return len(text.split())  # 1 token per word: makes the limit easy to hit
+    chunks = chunk_documents([doc], strategy, count_tokens=count, max_tokens=25)
+    assert chunks and all(count(c.embed_text) <= 25 for c in chunks)
+    assert "90 percent" in " ".join(c.text for c in chunks)
