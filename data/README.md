@@ -32,12 +32,17 @@ python scripts/download_corpus.py
 It checks each file is a real PDF, then records size, sha256 and page count in the manifest.
 Anything that fails is printed with what to do.
 
+**RBI blocks scripted downloads.** rbidocs.rbi.org.in answers scripts with an HTML error page
+while the same URL works in a browser. The `url` column is correct: open each RBI link in a
+browser and save it under the `filename` in `sources.csv`, then re-run the script to fill in
+pages and sha256. The bank PDFs download fine from the script.
+
 - **11 RBI consolidated Directions for commercial banks** (28 Nov 2025, latest updates to
   Jul 2026): Credit Facilities, Responsible Business Conduct, Interest Rates on Advances,
   IRACP, Credit Risk Management, Concentration Risk Management, KYC, Resolution of Stressed
   Assets, Wilful Defaulters, Credit Information Reporting, Credit and Debit Cards.
-- **7 bank policies**: Fair Practices Codes from SBI, ICICI, Axis, IDFC FIRST, Bandhan and CSB
-  (public, large private, small private and small finance banks), plus a regional rural
+- **7 bank policies**: Fair Practices Codes from SBI, ICICI, Axis, IDFC FIRST, City Union Bank
+  and DBS Bank India (public, large private, old private and foreign-bank subsidiary), plus a regional rural
   bank's collection and repossession policy. They restate RBI rules in their own words,
   which is what multi-hop questions need.
 
