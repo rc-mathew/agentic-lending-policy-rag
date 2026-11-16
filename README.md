@@ -8,7 +8,8 @@ tools for EMI and FOIR calculations.
 The project compares three systems on the same 60-question gold set: plain RAG, a ReAct agent
 written by hand in plain Python, and a LangGraph agent.
 
-> **Status: week 1 of 3, setup.** Results table coming at the end of week 1.
+> **Status: week 1 of 3.** Corpus ingested (18 PDFs, 829 pages) and chunking chosen. Plain-RAG
+> answers and the gold-set results table come later this week.
 
 ## Results
 
@@ -18,13 +19,46 @@ written by hand in plain Python, and a LangGraph agent.
 | Hand-written ReAct agent | – | – | – | – | – | – | – |
 | LangGraph agent | – | – | – | – | – | – | – |
 
+## Chunking: section-aware, chosen on a 15-question probe
+
+Three strategies were embedded with BGE-small and scored on 15 questions, each pinned to the page
+that answers it ([`data/eval/probe_questions.jsonl`](data/eval/probe_questions.jsonl)). A hit means
+a top-k chunk comes from the answer document and covers the answer page.
+
+| Strategy | Chunks | Hit@1 | Hit@3 | Hit@5 | MRR@5 |
+|---|---|---|---|---|---|
+| Fixed 1,200 chars | 1,384 | 40% | 60% | 67% | 0.51 |
+| Recursive (LangChain) | 1,691 | 40% | 60% | 73% | 0.51 |
+| **Section-aware** | 1,751 | **47%** | **73%** | **93%** | **0.62** |
+
+Section-aware chunking splits at RBI's own structure (Chapter / lettered section / numbered
+paragraph such as `60K.`), never mixes two sections, and prefixes each chunk with its location
+("Credit Facilities > Chapter VII - Project Finance > D. Other Provisions"). 59–66% of its RBI
+chunks start at a paragraph boundary, against 0% (fixed) and 17% (recursive).
+
+What this does and does not show:
+
+- 15 questions is a directional check (14 vs 11 vs 10 found in the top 5), not a significant
+  result. The 60-question gold set re-tests it.
+- **Same-sounding banks.** "Will SBI acknowledge my loan application?" fails under every strategy:
+  every bank's Fair Practices Code says much the same thing, and the embedding ignores the bank's
+  name. The fix is issuer filtering in the agent's query step and hybrid BM25 search (week 3).
+- **Rank 1 is weak** (47%): the answer is usually retrieved but not first. That is the
+  cross-encoder re-ranker's job (week 3).
+- A first run found chunks up to 670 real tokens (number-heavy tables run ~2.5 chars per token),
+  which BGE silently truncates at 512. All strategies now re-split by the model's own tokenizer
+  (max 500 tokens); the scores did not change.
+
+Reproduce: `python scripts/extract_pages.py`, `python scripts/chunk_corpus.py`,
+`python scripts/eval_retrieval.py`.
+
 ## Stack
 
 Runs on an 8 GB laptop at zero cost.
 
 | Layer | Choice |
 |---|---|
-| Ingestion | `pypdf` (page-accurate citations) + LangChain text splitters, 2–3 chunking strategies compared |
+| Ingestion | `pypdf` (pdfplumber fallback for fragmented PDFs), page numbers kept for citations; section-aware chunking |
 | Embeddings | BGE-small (`BAAI/bge-small-en-v1.5`, CPU) vs Gemini embeddings |
 | Vector store | Qdrant, local mode (no server) |
 | Generation | Gemini (free tier), structured answers with citations |
@@ -68,9 +102,9 @@ every document with its source URL and status (current or repealed).
 ## Layout
 
 ```
-src/policy_rag/   library code (config, LLM wrapper; ingestion, retrieval, agents to come)
-scripts/          entry points (setup check; ingest, eval to come)
-data/             manifest and corpus notes (PDFs git-ignored)
+src/policy_rag/   config, LLM wrapper, ingest (PDF -> pages), chunking; retrieval and agents to come
+scripts/          check_setup, download_corpus, extract_pages, chunk_corpus, eval_retrieval
+data/             manifest, corpus notes, eval sets and results (PDFs and processed files git-ignored)
 tests/            offline tests (no API calls)
 ```
 

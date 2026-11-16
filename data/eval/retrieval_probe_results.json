@@ -1,0 +1,65 @@
+{
+  "results": {
+    "fixed": {
+      "chunks": 1384,
+      "max_tokens": 493,
+      "over_limit": 0,
+      "hit@1": 0.4,
+      "hit@3": 0.6,
+      "hit@5": 0.667,
+      "mrr@5": 0.506
+    },
+    "recursive": {
+      "chunks": 1691,
+      "max_tokens": 487,
+      "over_limit": 0,
+      "hit@1": 0.4,
+      "hit@3": 0.6,
+      "hit@5": 0.733,
+      "mrr@5": 0.508
+    },
+    "section_aware": {
+      "chunks": 1751,
+      "max_tokens": 469,
+      "over_limit": 0,
+      "hit@1": 0.467,
+      "hit@3": 0.733,
+      "hit@5": 0.933,
+      "mrr@5": 0.624
+    }
+  },
+  "misses": {
+    "fixed": [
+      "p02 rank=4 top1=rbi_cb_interest_rates_on_advances p14-14",
+      "p04 rank=>5 top1=rbi_cb_resolution_of_stressed_assets p22-23",
+      "p05 rank=2 top1=rbi_cb_kyc p44-44",
+      "p06 rank=3 top1=rbi_cb_credit_debit_cards p12-12",
+      "p07 rank=>5 top1=rbi_cb_credit_information_reporting p24-25",
+      "p08 rank=>5 top1=rbi_cb_credit_facilities p34-34",
+      "p10 rank=>5 top1=rbi_cb_credit_debit_cards p14-14",
+      "p11 rank=2 top1=rbi_cb_responsible_business_conduct p120-121",
+      "p15 rank=>5 top1=dbs_india_fair_practice_code p2-2"
+    ],
+    "recursive": [
+      "p02 rank=>5 top1=icici_fair_practices_code p3-3",
+      "p03 rank=3 top1=rbi_cb_iracp p11-11",
+      "p04 rank=5 top1=rbi_cb_iracp p5-5",
+      "p08 rank=4 top1=rbi_cb_credit_facilities p34-34",
+      "p10 rank=>5 top1=rbi_cb_credit_debit_cards p14-14",
+      "p11 rank=2 top1=kgb_collection_repossession_policy p6-6",
+      "p12 rank=>5 top1=rbi_cb_credit_debit_cards p15-15",
+      "p13 rank=3 top1=rbi_cb_credit_facilities p56-56",
+      "p15 rank=>5 top1=idfc_first_fair_practices_code p2-2"
+    ],
+    "section_aware": [
+      "p02 rank=4 top1=rbi_cb_responsible_business_conduct p101-101",
+      "p03 rank=3 top1=rbi_cb_iracp p11-12",
+      "p04 rank=2 top1=rbi_cb_iracp p19-19",
+      "p06 rank=3 top1=rbi_cb_credit_debit_cards p12-12",
+      "p10 rank=5 top1=rbi_cb_credit_debit_cards p14-14",
+      "p11 rank=4 top1=rbi_cb_responsible_business_conduct p114-114",
+      "p12 rank=2 top1=rbi_cb_credit_debit_cards p15-15",
+      "p15 rank=>5 top1=icici_fair_practices_code p2-2"
+    ]
+  }
+}
