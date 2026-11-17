@@ -52,6 +52,43 @@ What this does and does not show:
 Reproduce: `python scripts/extract_pages.py`, `python scripts/chunk_corpus.py`,
 `python scripts/eval_retrieval.py`.
 
+## Agents
+
+Two agents wrap the same retriever, calculators and cited-answer format, so the gold set scores
+all three systems the same way.
+
+**Hand-written ReAct loop** ([`react_agent.py`](src/policy_rag/react_agent.py), plain Python):
+each step the model writes a thought and picks one action (search, a calculator, or finish);
+the result is appended to its history. Capped at 5 steps and 20k tokens.
+
+**LangGraph agent** ([`graph_agent.py`](src/policy_rag/graph_agent.py)): the control flow is fixed
+in the graph and the model answers only small, checkable questions.
+
+```mermaid
+graph TD;
+  START([start]) --> plan;
+  plan -.->|search| retrieve;
+  plan -.->|clearly off-topic| generate;
+  retrieve --> grade;
+  grade -.->|weak evidence, retries left| retrieve;
+  grade -.->|needs arithmetic| calculate;
+  grade -.->|enough evidence| generate;
+  calculate --> generate;
+  generate --> END([end]);
+```
+
+- **plan**: routes the question; writes 1-3 searches in regulatory wording (splits two-part
+  questions, expands "SBI" to "State Bank of India"); flags arithmetic.
+- **grade**: keeps only relevant passages; if they do not answer the question, writes one better
+  query and retrieves again (corrective RAG), at most 2 rounds.
+- **calculate**: the model picks calculator calls; Python runs them (EMI, tenure, FOIR, LTV).
+- **generate**: the same cited-claims answer as plain RAG, over graded evidence only.
+
+First live runs of the ReAct agent: "max home loan on a Rs 40 lakh flat" went search, then
+`max_loan_for_ltv(4000000, 80)`, giving Rs 32 lakh, cited (4 calls). "Will SBI acknowledge my loan
+application?", missed by every chunking strategy, worked after the agent rewrote "SBI" to "State
+Bank of India" in a second search.
+
 ## Stack
 
 Runs on an 8 GB laptop at zero cost.
@@ -102,8 +139,9 @@ every document with its source URL and status (current or repealed).
 ## Layout
 
 ```
-src/policy_rag/   config, LLM wrapper, ingest (PDF -> pages), chunking; retrieval and agents to come
-scripts/          check_setup, download_corpus, extract_pages, chunk_corpus, eval_retrieval
+src/policy_rag/   config, llm, ingest, chunking, retrieve, rag, tools, react_agent, graph_agent, evaluate
+scripts/          check_setup, download_corpus, extract_pages, chunk_corpus, eval_retrieval,
+                  build_index, ask, agent, graph_agent, evaluate
 data/             manifest, corpus notes, eval sets and results (PDFs and processed files git-ignored)
 tests/            offline tests (no API calls)
 ```

@@ -38,7 +38,12 @@ def make_system(name: str):
         from policy_rag.react_agent import run
 
         return lambda q: run(q, retriever)
-    raise SystemExit(f"unknown system {name!r} (available: plain, react)")
+    if name == "graph":
+        from policy_rag import graph_agent
+
+        graph = graph_agent.build_graph(retriever)  # compile once, reuse for every question
+        return lambda q: graph_agent.run(q, retriever, graph=graph)
+    raise SystemExit(f"unknown system {name!r} (available: plain, react, graph)")
 
 
 def fmt(v) -> str:
