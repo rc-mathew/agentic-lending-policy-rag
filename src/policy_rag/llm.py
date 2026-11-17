@@ -84,7 +84,10 @@ def generate(
 ) -> LLMResult:
     """Generate text (or JSON matching `response_schema`, a Pydantic model) from Gemini."""
     model = model or settings.gen_model
-    schema_name = response_schema.__name__ if response_schema else ""
+    # The full JSON schema, not just the class name: editing a field must not hit stale cache.
+    schema_name = (
+        json.dumps(response_schema.model_json_schema(), sort_keys=True) if response_schema else ""
+    )
     key = _cache_key(model, prompt, system, temperature, schema_name)
     path = CACHE_DIR / f"{key}.json"
 
