@@ -11,7 +11,7 @@ What it can do that plain RAG cannot: rewrite a vague question into a better sea
 twice for a two-part (multi-hop) question, do arithmetic with a tool instead of in its head, and
 stop searching when the evidence is enough.
 
-Stopping conditions: at most MAX_STEPS actions and MAX_TOKENS tokens across all calls. Either
+Stopping conditions: at most MAX_STEPS actions and MAX_TOKENS (30k) tokens across all calls. Either
 limit forces the final answer from whatever has been collected so far.
 """
 
@@ -32,9 +32,11 @@ from .tools import TOOL_SPECS, call_tool
 from .tracing import answer_outputs, traceable
 
 MAX_STEPS = 5
-MAX_TOKENS = 20_000
+MAX_TOKENS = 30_000
 SEARCH_K = 4
-SNIPPET_CHARS = 700
+# Agents read whole chunks (<=500 tokens, ~1,700 chars). An earlier 700-char cut hid rules that
+# sit late in a chunk (RBI's 8:00 a.m. recovery-call limit is at char 1,109).
+SNIPPET_CHARS = 2000
 
 Action = Literal["search", "emi", "tenure_for_emi", "foir", "max_loan_for_ltv", "finish"]
 

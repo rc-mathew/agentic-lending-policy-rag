@@ -119,3 +119,20 @@ def test_multi_part_question_runs_every_planned_query(monkeypatch):
     assert ret.queries == ["RBI recovery call hours", "KGB contact hours"]
     assert [h.chunk_id for h in r.hits] == ["q1a", "q2a"]
     assert r.claims[0]["sources"] == [1, 2]
+
+
+def test_grader_sees_text_late_in_a_long_chunk(monkeypatch):
+    """Regression: a 600-char cut hid RBI's 8:00 a.m. rule (char 1,109) from the grader."""
+    class LongChunk(FakeRetriever):
+        def search(self, query, k=4):
+            h = _hit("long")
+            h.text = "x " * 550 + "calling the borrower before 8:00 a.m. is not allowed"
+            return [h]
+    gen = by_schema({
+        "Plan": [{"route": "search", "queries": ["recovery call hours"], "needs_calculation": False}],
+        "Grade": [{"relevant": [1], "sufficient": True, "better_query": ""}],
+        "Answer": [ANSWER],
+    })
+    monkeypatch.setattr(graph_agent, "generate", gen)
+    graph_agent.run("When can recovery agents call?", LongChunk())
+    assert "before 8:00 a.m." in gen.prompts["Grade"]

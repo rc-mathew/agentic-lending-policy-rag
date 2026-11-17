@@ -75,7 +75,7 @@ all three systems the same way.
 
 **Hand-written ReAct loop** ([`react_agent.py`](src/policy_rag/react_agent.py), plain Python):
 each step the model writes a thought and picks one action (search, a calculator, or finish);
-the result is appended to its history. Capped at 5 steps and 20k tokens.
+the result is appended to its history. Capped at 5 steps and 30k tokens.
 
 **LangGraph agent** ([`graph_agent.py`](src/policy_rag/graph_agent.py)): the control flow is fixed
 in the graph and the model answers only small, checkable questions.
@@ -96,7 +96,7 @@ graph TD;
 - **plan**: routes the question; writes 1-3 searches in regulatory wording (splits two-part
   questions, expands "SBI" to "State Bank of India"); flags arithmetic.
 - **grade**: keeps only relevant passages; if they do not answer the question, writes one better
-  query and retrieves again (corrective RAG), at most 2 rounds.
+  query and retrieves again (corrective RAG), at most 2 rounds and 30k tokens.
 - **calculate**: the model picks calculator calls; Python runs them (EMI, tenure, FOIR, LTV).
 - **generate**: the same cited-claims answer as plain RAG, over graded evidence only.
 

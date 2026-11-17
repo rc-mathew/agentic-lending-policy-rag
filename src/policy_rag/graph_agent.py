@@ -16,7 +16,7 @@ Nodes:
 
 Where the hand-written ReAct loop lets the model decide everything step by step, this graph fixes
 the control flow and asks the model only small, checkable questions. Caps: MAX_RETRIEVALS rounds
-of retrieval and MAX_TOKENS tokens; either one sends the graph straight to generate.
+of retrieval and MAX_TOKENS (30k) tokens; either one sends the graph straight to generate.
 """
 
 from __future__ import annotations
@@ -36,9 +36,12 @@ from .tools import TOOL_SPECS, call_tool
 from .tracing import answer_outputs, traceable
 
 MAX_RETRIEVALS = 2
-MAX_TOKENS = 20_000
+MAX_TOKENS = 30_000
 SEARCH_K = 4
-SNIPPET_CHARS = 600
+# Agents read whole chunks (<=500 tokens, ~1,700 chars). An earlier 600-char cut hid rules that
+# sit late in a chunk (RBI's 8:00 a.m. recovery-call limit is at char 1,109) and the grader
+# rejected the right evidence.
+SNIPPET_CHARS = 2000
 
 
 # ---- structured outputs the model must return --------------------------------------------------
