@@ -1,0 +1,60 @@
+{
+  "overall": {
+    "n": 60,
+    "correctness": 0.817,
+    "citation_accuracy": 0.947,
+    "retrieval_hit": 0.94,
+    "cites_gold": 0.957,
+    "abstention_correct": 1,
+    "false_refusal": 0.06
+  },
+  "calculation": {
+    "n": 10,
+    "correctness": 0.45,
+    "citation_accuracy": 0.817,
+    "retrieval_hit": 1,
+    "cites_gold": 0.9,
+    "abstention_correct": null,
+    "false_refusal": 0
+  },
+  "direct": {
+    "n": 30,
+    "correctness": 0.933,
+    "citation_accuracy": 0.977,
+    "retrieval_hit": 0.933,
+    "cites_gold": 0.966,
+    "abstention_correct": null,
+    "false_refusal": 0.033
+  },
+  "multi_hop": {
+    "n": 10,
+    "correctness": 0.65,
+    "citation_accuracy": 1.0,
+    "retrieval_hit": 0.9,
+    "cites_gold": 1,
+    "abstention_correct": null,
+    "false_refusal": 0.2
+  },
+  "unanswerable": {
+    "n": 10,
+    "correctness": 1.0,
+    "citation_accuracy": null,
+    "retrieval_hit": null,
+    "cites_gold": null,
+    "abstention_correct": 1,
+    "false_refusal": null
+  },
+  "cost": {
+    "avg_system_tokens": 2081,
+    "avg_judge_tokens": 1270,
+    "latency_p50_s": 3.58,
+    "avg_system_calls": 1
+  },
+  "meta": {
+    "system": "plain",
+    "retriever": "rerank",
+    "items": 60,
+    "of": 60,
+    "drafts_included": false
+  }
+}

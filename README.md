@@ -8,16 +8,56 @@ tools for EMI and FOIR calculations.
 The project compares three systems on the same 60-question gold set: plain RAG, a ReAct agent
 written by hand in plain Python, and a LangGraph agent.
 
-> **Status: week 1 of 3.** Corpus ingested (18 PDFs, 829 pages) and chunking chosen. Plain-RAG
-> answers and the gold-set results table come later this week.
+> **Status:** plain RAG and the ReAct agent are scored on the full gold set; the LangGraph run
+> and the Hugging Face demo are next.
 
 ## Results
 
-| System | Faithfulness | Answer relevance | Context recall | Citation accuracy | Abstention (10 unanswerable) | Cost / question | Latency p50 |
-|---|---|---|---|---|---|---|---|
-| Plain RAG | – | – | – | – | – | – | – |
-| Hand-written ReAct agent | – | – | – | – | – | – | – |
-| LangGraph agent | – | – | – | – | – | – | – |
+All 60 gold questions (30 direct, 10 multi-hop, 10 calculation, 10 unanswerable), each checked
+by hand against the source PDF. Same retriever for every system: hybrid search + re-ranker, top 5.
+Answers by `gemini-3.5-flash-lite`; graded by a different model (`openai/gpt-oss-120b` on Groq) so
+no system grades itself. Per-question results: [`data/eval/results/`](data/eval/results/).
+
+| System | Correct | Citation accuracy | Right page retrieved | Abstained when it should (10) | False refusals | Model calls / question | Tokens / question | Latency p50 |
+|---|---|---|---|---|---|---|---|---|
+| Plain RAG | 82% | 95% | 94% | 100% | 6% | 1.0 | 2,081 | 3.6 s |
+| Hand-written ReAct agent | **90%** | 93% | 92% | 100% | **0%** | 3.2 | 4,528 | 10.1 s |
+| LangGraph agent | running | | | | | | | |
+
+By question type (correct):
+
+| System | Direct (30) | Multi-hop (10) | Calculation (10) | Unanswerable (10) |
+|---|---|---|---|---|
+| Plain RAG | 93% | 65% | 45% | 100% |
+| ReAct agent | 98% | 90% | 55% | 100% |
+
+*Correct* is the judge's score (1, 0.5 or 0 per question) against the verified answer.
+*Citation accuracy* is the share of claims the judge found supported by the passage they cite.
+*Right page retrieved* means a passage from the gold page was among those the system saw.
+With 10 questions per type, one question moves a type's score by 10 points: read small gaps
+as noise.
+
+**What the numbers say**
+
+- **Re-searching is what the agent buys.** Multi-hop goes from 65% to 90% and false refusals
+  from 3 to 0: plain RAG gives up when one search of 5 passages misses part of the answer
+  (g32 needs three banks' policies); the agent searches again.
+- **Plain RAG applied the wrong rule once** (g31): it quoted RBI's *microfinance* calling hours
+  (9 a.m.–6 p.m.) instead of the general recovery rule (8 a.m.–7 p.m.). Cited and fluent, but
+  wrong, the most dangerous kind of error. The agent got it right.
+- **Calculation is the weak spot for both, and the calculator barely helped (45% to 55%).**
+  In the 10 calculation questions the ReAct agent: stopped without computing 3 times (g47, g49,
+  g50, even with an EMI tool available), had no tool for plain arithmetic (15 days × ₹100,
+  0.40% of ₹50 crore), picked the wrong LTV slab twice (g41, g44), and used the EMI tool on a
+  bullet loan (g42).
+- **Costs:** the agent takes 3.2× the calls, 2.2× the tokens and 2.8× the latency of plain RAG.
+- **Remaining misses are partial answers** that drop a condition (g17: the multi-lender
+  condition; g35: the six-month deadline).
+
+These failures were found on the gold set, so fixing them and re-scoring on the same questions
+would overstate the gain. Fixes (an arithmetic tool, slab lookup inside the LTV tool, a
+"compute before finishing" rule) will be scored on a fresh set of calculation questions and
+reported separately.
 
 ## Chunking: section-aware, chosen on a 15-question probe
 
