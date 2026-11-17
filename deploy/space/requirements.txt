@@ -1,0 +1,14 @@
+# Runtime only (no PDF ingestion, no eval). Versions match the laptop the index was built on;
+# qdrant-client in particular must read the local index format it was written with.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.15.0+cpu
+sentence-transformers==6.3.0
+transformers==5.23.0
+qdrant-client==1.20.0
+google-genai==3.3.0
+langgraph==1.2.22
+langsmith==0.14.17
+rank-bm25==0.2.2
+streamlit==1.67.0
+pydantic==2.14.3
+python-dotenv==1.2.4
