@@ -50,7 +50,9 @@ def test_search_then_tool_then_finish(monkeypatch):
     assert r.stopped_by == "finish" and r.calls == 4
     assert "max_loan_for_ltv" in gen.prompts[-1] and "= 3200000" in gen.prompts[-1]
     assert r.claims == [{"text": "Max loan is Rs 32 lakh.", "sources": [1]}]
-    assert len(r.hits) == 2
+    # Two passages plus the calculator result, which is citable as source [3].
+    assert len(r.hits) == 3 and r.hits[2].doc_id == "calculator"
+    assert "[3] Calculator: max_loan_for_ltv" in gen.prompts[-1]
 
 
 def test_repeat_search_adds_no_duplicate_sources(monkeypatch):

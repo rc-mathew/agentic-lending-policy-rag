@@ -6,7 +6,9 @@ them as tools with the same JSON schema. Amounts are in rupees, rates in percent
 
 from __future__ import annotations
 
+import ast
 import math
+import operator
 
 
 def _check_positive(**values: float) -> None:
@@ -56,6 +58,74 @@ def max_loan_for_ltv(collateral_value: float, ltv_pct: float) -> float:
     if ltv_pct > 100:
         raise ValueError("ltv_pct cannot exceed 100")
     return round(collateral_value * ltv_pct / 100)
+
+
+def max_loan_by_slabs(collateral_value: float, slabs: list[dict]) -> dict:
+    """Largest loan under slab-wise LTV caps, where the slab depends on the loan amount itself.
+
+    `slabs` come from the passages, e.g. RBI housing loans:
+    [{"up_to": 3000000, "ltv_pct": 90}, {"up_to": 7500000, "ltv_pct": 80}, {"up_to": null,
+    "ltv_pct": 75}]. A loan L sits in the first slab whose `up_to` is >= L. For each slab the
+    best feasible loan is min(up_to, value * ltv); it counts only if it lands inside that slab.
+    This is the step models get wrong by hand: 85% of a ₹3 lakh gold item is ₹2.55 lakh, which
+    is above the ₹2.5 lakh line, where the cap is 80% (₹2.4 lakh), back below the line, so the
+    answer is the line itself, ₹2.5 lakh.
+    """
+    _check_positive(collateral_value=collateral_value)
+    if not slabs:
+        raise ValueError("slabs must not be empty")
+    try:
+        ordered = sorted(slabs, key=lambda s: math.inf if s.get("up_to") is None else s["up_to"])
+        best, best_slab, lower = 0.0, None, 0.0
+        for s in ordered:
+            up_to = math.inf if s.get("up_to") is None else float(s["up_to"])
+            ltv = float(s["ltv_pct"])
+            if not 0 < ltv <= 100:
+                raise ValueError(f"ltv_pct must be in (0, 100], got {ltv}")
+            loan = min(up_to, collateral_value * ltv / 100)
+            if loan > lower and loan > best:
+                best, best_slab = loan, s
+            lower = up_to
+    except (KeyError, TypeError) as e:
+        raise ValueError(f"each slab needs up_to (number or null) and ltv_pct: {e}") from e
+    if best_slab is None:
+        raise ValueError("no slab admits a positive loan")
+    return {"max_loan": round(best), "ltv_pct_applied": best_slab["ltv_pct"],
+            "ltv_actual_pct": round(best / collateral_value * 100, 2)}
+
+
+_OPS = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+        ast.Div: operator.truediv, ast.Pow: operator.pow, ast.USub: operator.neg,
+        ast.UAdd: operator.pos}
+
+
+def arithmetic(expression: str) -> float:
+    """Evaluate plain arithmetic (+ - * / ** and parentheses on numbers), nothing else.
+
+    For the sums the finance tools do not cover: 15 days x ₹100, 0.40% of ₹50 crore.
+    Parsed with `ast`, never `eval`, so a model cannot run code through it.
+    """
+    if not isinstance(expression, str) or len(expression) > 200:
+        raise ValueError("expression must be a string of at most 200 characters")
+
+    def ev(node):
+        if isinstance(node, ast.Expression):
+            return ev(node.body)
+        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+            return node.value
+        if isinstance(node, ast.BinOp) and type(node.op) in _OPS:
+            if isinstance(node.op, ast.Pow) and abs(ev(node.right)) > 100:
+                raise ValueError("exponent too large")
+            return _OPS[type(node.op)](ev(node.left), ev(node.right))
+        if isinstance(node, ast.UnaryOp) and type(node.op) in _OPS:
+            return _OPS[type(node.op)](ev(node.operand))
+        raise ValueError("only numbers, + - * / ** and parentheses are allowed")
+
+    try:
+        value = ev(ast.parse(expression.replace(",", ""), mode="eval"))
+    except (SyntaxError, ZeroDivisionError) as e:
+        raise ValueError(f"cannot evaluate {expression!r}: {e}") from e
+    return round(value, 4)
 
 
 # JSON schemas for tool calling (shared by the hand-written ReAct loop and LangGraph).
@@ -113,8 +183,36 @@ TOOL_SPECS = [
     },
 ]
 
+TOOL_SPECS += [
+    {
+        "name": "max_loan_by_slabs",
+        "description": "Largest loan when the LTV cap depends on the loan size (slabs, e.g. "
+                       "housing or gold loans). Pass every slab from the passage.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "collateral_value": {"type": "number"},
+                "slabs": {"type": "array", "description": 'e.g. [{"up_to": 3000000, '
+                          '"ltv_pct": 90}, {"up_to": null, "ltv_pct": 75}]'},
+            },
+            "required": ["collateral_value", "slabs"],
+        },
+    },
+    {
+        "name": "arithmetic",
+        "description": "Plain arithmetic for anything else: amounts x days, a percentage of an "
+                       "amount, differences. Numbers and + - * / ** ( ) only.",
+        "parameters": {
+            "type": "object",
+            "properties": {"expression": {"type": "string", "description": "e.g. (45 - 30) * 100"}},
+            "required": ["expression"],
+        },
+    },
+]
+
 TOOLS = {"emi": emi, "tenure_for_emi": tenure_for_emi, "foir": foir,
-         "max_loan_for_ltv": max_loan_for_ltv}
+         "max_loan_for_ltv": max_loan_for_ltv, "max_loan_by_slabs": max_loan_by_slabs,
+         "arithmetic": arithmetic}
 
 
 def call_tool(name: str, args: dict) -> dict:

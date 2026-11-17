@@ -29,7 +29,7 @@ from pydantic import BaseModel, Field
 
 from .llm import generate
 from .rag import SYSTEM as ANSWER_SYSTEM
-from .rag import Answer, build_prompt
+from .rag import Answer, build_prompt, calculator_hits
 from .react_agent import AgentResult, TraceStep
 from .retrieve import Hit
 from .tools import TOOL_SPECS, call_tool
@@ -71,8 +71,11 @@ class CalcPlan(BaseModel):
 
 PLAN_SYSTEM = """You plan research for questions about Indian bank lending rules (RBI Directions
 and banks' own lending policies).
-- route = out_of_scope only for questions clearly outside Indian banking/lending (e.g. US law,
-  income tax). Questions about current market rates are still "search" (the documents decide).
+- route = out_of_scope for questions clearly outside Indian banking/lending (e.g. US law,
+  income tax), and for questions that ask for a live figure that changes day to day (today's
+  repo rate, a bank's current interest rate, which bank is cheapest now): the documents are
+  rules and policies, not market data. Questions about the RULES for rates (how often MCLR is
+  reviewed, when a reset may happen) are "search".
 - Write 1-3 search queries in the documents' formal wording. Split questions with two parts or
   two documents into separate queries. Expand bank abbreviations (SBI -> State Bank of India).
 - needs_calculation = true if an amount, EMI, ratio, days or compensation must be computed."""
@@ -207,16 +210,15 @@ def build_graph(retriever, model: str | None = None, max_retrievals: int = MAX_R
         return {**usage, "calcs": calcs, "steps": steps}
 
     def generate_node(state: State) -> dict:
-        prompt = build_prompt(state["question"], state["hits"])
-        if state["calcs"]:
-            prompt += ("\n\nCalculator results (exact; use these numbers, cite the rule's "
-                       "source):\n" + "\n".join(f"- {c}" for c in state["calcs"]))
+        # Computed figures become numbered sources, so the answer can cite them.
+        hits = state["hits"] + calculator_hits(state["calcs"])
+        prompt = build_prompt(state["question"], hits)
         a, usage = llm(state, prompt, ANSWER_SYSTEM, Answer)
         stopped = state.get("stopped_by") or (
             "out_of_scope" if state["route"] == "out_of_scope"
             else "sufficient" if state.get("sufficient")
             else "max_retrievals")
-        return {**usage, "answer": a, "stopped_by": stopped,
+        return {**usage, "answer": a, "stopped_by": stopped, "hits": hits,
                 "steps": state["steps"] + [TraceStep("", "generate", "", "")]}
 
     g = StateGraph(State)

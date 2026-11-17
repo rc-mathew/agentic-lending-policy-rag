@@ -48,6 +48,9 @@ def rrf(rankings: list[list[str]], k: int = RRF_K) -> list[str]:
     return sorted(scores, key=lambda c: -scores[c])
 
 
+CALCULATOR = "calculator"  # doc_id of calculator results passed to the answer step as sources
+
+
 @dataclass
 class Hit:
     score: float
@@ -63,6 +66,8 @@ class Hit:
 
     @property
     def pages(self) -> str:
+        if self.doc_id == CALCULATOR:
+            return "computed"
         if self.page_start == self.page_end:
             return f"p. {self.page_start}"
         return f"pp. {self.page_start}-{self.page_end}"
@@ -70,6 +75,8 @@ class Hit:
     @property
     def label(self) -> str:
         """Human citation: issuer, short title, pages."""
+        if self.doc_id == CALCULATOR:
+            return f"Calculator: {self.text}"
         return f"{self.title} ({self.issuer}), {self.pages}"
 
 

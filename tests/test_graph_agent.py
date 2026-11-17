@@ -56,8 +56,11 @@ def test_happy_path_with_calculation(monkeypatch):
     monkeypatch.setattr(graph_agent, "generate", gen)
     r = graph_agent.run("Flat costs 40 lakh, max loan?", FakeRetriever())
     assert gen.calls == ["Plan", "Grade", "CalcPlan", "Answer"]
-    assert [h.chunk_id for h in r.hits] == ["q1a"]  # grader dropped the irrelevant passage
-    assert "max_loan_for_ltv" in gen.prompts["Answer"] and "= 3200000" in gen.prompts["Answer"]
+    # The grader dropped the irrelevant passage; the calculator result is source [2].
+    assert [h.chunk_id for h in r.hits] == ["q1a", "calc:0"]
+    assert r.hits[1].label.startswith("Calculator: max_loan_for_ltv")
+    assert "[2] Calculator: max_loan_for_ltv" in gen.prompts["Answer"]
+    assert "= 3200000" in gen.prompts["Answer"]
     assert r.stopped_by == "sufficient" and r.calls == 4
     assert [s.action for s in r.steps] == ["plan", "retrieve", "grade", "max_loan_for_ltv",
                                            "generate"]
@@ -136,3 +139,11 @@ def test_grader_sees_text_late_in_a_long_chunk(monkeypatch):
     monkeypatch.setattr(graph_agent, "generate", gen)
     graph_agent.run("When can recovery agents call?", LongChunk())
     assert "before 8:00 a.m." in gen.prompts["Grade"]
+
+
+def test_planner_routes_live_data_questions_away_but_not_rate_rules():
+    # Added after the scored runs (the demo spent 4 calls before abstaining on "repo rate today").
+    from policy_rag.graph_agent import PLAN_SYSTEM
+
+    assert "live figure that changes day to day" in PLAN_SYSTEM
+    assert "RULES for rates" in PLAN_SYSTEM

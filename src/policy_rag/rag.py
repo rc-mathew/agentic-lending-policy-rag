@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel, Field
 
 from .llm import generate
-from .retrieve import Hit
+from .retrieve import CALCULATOR, Hit
 from .tracing import answer_outputs, traceable
 
 SYSTEM = """You answer questions about Indian bank lending rules using ONLY the numbered sources.
@@ -37,6 +37,10 @@ Rules:
   citing every source the conclusion rests on (e.g. both the RBI rule and the bank's policy).
   Yes/No answers the question exactly as asked: "Can a bank charge X?" -> "No, it cannot ...",
   never "Yes, it cannot ...". Supporting facts follow.
+- Sources labelled "Calculator" are exact results computed from rule values in the other
+  sources and numbers in the question. When the question asks for an amount, a period or a
+  ratio, state the computed figure in a claim and cite the Calculator source together with the
+  source of the rule it applies.
 - Keep it short: at most 5 claims, each one sentence."""
 
 
@@ -91,6 +95,20 @@ def format_sources(hits: list[Hit]) -> str:
         status = " [REPEALED]" if h.status == "repealed" else ""
         blocks.append(f"[{i}] {h.label}{status}\nSection: {h.context}\n{h.text}")
     return "\n\n".join(blocks)
+
+
+def calculator_hits(calcs: list[str], start: int = 0) -> list[Hit]:
+    """Turn calculator results ("tool({args}) = result") into numbered, citable sources.
+
+    Before this, results were appended as unnumbered notes, and the answer rule "every claim
+    cites a numbered source" made the model drop the computed figures (gold g47, g49, g50).
+    """
+    return [
+        Hit(score=0.0, chunk_id=f"calc:{start + i}", doc_id=CALCULATOR, title="Calculator",
+            issuer="tool", status="in_force", page_start=0, page_end=0, context="Calculator",
+            text=c)
+        for i, c in enumerate(calcs)
+    ]
 
 
 def build_prompt(question: str, hits: list[Hit]) -> str:

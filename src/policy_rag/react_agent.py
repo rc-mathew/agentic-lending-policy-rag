@@ -26,7 +26,7 @@ from pydantic import BaseModel, Field
 
 from .llm import generate
 from .rag import SYSTEM as ANSWER_SYSTEM
-from .rag import Answer, RagResult, build_prompt
+from .rag import Answer, RagResult, build_prompt, calculator_hits
 from .retrieve import Hit
 from .tools import TOOL_SPECS, call_tool
 from .tracing import answer_outputs, traceable
@@ -69,7 +69,8 @@ How to work:
   wording (e.g. "pre-payment charges floating rate loans individuals"), not the user's.
 - If the question names a bank, put the bank's name in the query.
 - A question with two parts or two documents needs two searches.
-- Use a calculator for ANY arithmetic; never compute in your head. Take rule values (LTV caps,
+- Use a calculator for ANY arithmetic; never compute in your head. If the question asks for an
+  amount, a period or a ratio, call a calculator before you finish. Take rule values (LTV caps,
   rates, days) from the passages you found.
 - Do not repeat a search you already ran. Finish as soon as the evidence answers the question,
   or after two searches find nothing relevant (then the answer is that it is not covered)."""
@@ -156,10 +157,8 @@ def run(question: str, retriever, model: str | None = None,
             steps.append(TraceStep(step.thought, step.action, json.dumps(args), obs))
 
     # Final answer: same schema and checks as plain RAG, over everything collected.
+    hits = hits + calculator_hits(calcs)  # computed figures are citable sources too
     prompt = build_prompt(question, hits)
-    if calcs:
-        prompt += "\n\nCalculator results (exact; use these numbers, cite the rule's source):\n"
-        prompt += "\n".join(f"- {c}" for c in calcs)
     final = generate(prompt, system=ANSWER_SYSTEM, model=model, response_schema=Answer)
     calls += 1
     tokens_in += final.input_tokens
