@@ -28,7 +28,10 @@ class Settings:
     gemini_api_key: str = field(default_factory=lambda: _env("GEMINI_API_KEY"))
     gen_model: str = field(default_factory=lambda: _env("GEN_MODEL", "gemini-3.5-flash-lite"))
     judge_model: str = field(default_factory=lambda: _env("JUDGE_MODEL", "gemini-3.5-flash-lite"))
-    llm_max_rpm: int = field(default_factory=lambda: int(_env("LLM_MAX_RPM", "8")))
+    llm_max_rpm: int = field(default_factory=lambda: int(_env("LLM_MAX_RPM", "12")))
+    groq_api_key: str = field(default_factory=lambda: _env("GROQ_API_KEY"))
+    # Groq's free tier caps gpt-oss-120b at 8K tokens/minute; a judge call is ~2K tokens.
+    groq_max_rpm: int = field(default_factory=lambda: int(_env("GROQ_MAX_RPM", "3")))
     embed_model: str = field(default_factory=lambda: _env("EMBED_MODEL", "BAAI/bge-small-en-v1.5"))
 
 

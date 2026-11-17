@@ -59,3 +59,11 @@ def test_hit_label_page_range():
     h = _hit(0)
     h.page_end = 24
     assert h.label.endswith("pp. 22-24")
+
+
+def test_answer_prompt_requires_a_direct_verdict_first():
+    # Regression: the KGB 07:00 question got both rules cited but no "is it allowed?" verdict.
+    from policy_rag.rag import SYSTEM
+
+    assert "FIRST claim answers the question directly" in SYSTEM
+    assert "Yes, No or Partly" in SYSTEM

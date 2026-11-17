@@ -1,4 +1,4 @@
-"""Thin Gemini wrapper built for the free tier.
+"""Thin LLM wrapper built for free tiers: Gemini by default, Groq for models named "groq:<model>".
 
 Three things matter on a free quota, and every LLM call in this project goes through here:
 
@@ -7,6 +7,10 @@ Three things matter on a free quota, and every LLM call in this project goes thr
 2. Client-side throttle: stays under the per-minute limit instead of hitting 429s.
 3. Retry with backoff on 429 / 5xx, and a clear error once the *daily* quota is gone
    (retrying that is pointless until it resets at midnight Pacific).
+
+Groq is here only so the eval judge can be a different model from the one it grades, and so
+judge calls do not spend the Gemini daily quota. It goes through Groq's OpenAI-compatible REST
+endpoint with the standard library, so it adds no dependency.
 """
 
 from __future__ import annotations
@@ -15,6 +19,8 @@ import hashlib
 import json
 import threading
 import time
+import urllib.error
+import urllib.request
 from collections import deque
 from dataclasses import dataclass
 
@@ -54,7 +60,9 @@ class _RateLimiter:
 
 
 _limiter = _RateLimiter(settings.llm_max_rpm)
+_groq_limiter = _RateLimiter(settings.groq_max_rpm)
 _client = None
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
 def _get_client():
@@ -73,7 +81,61 @@ def _cache_key(model: str, prompt: str, system: str | None, temperature: float, 
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-@traceable(run_type="llm", name="gemini", process_outputs=llm_outputs)
+def _groq_call(model: str, prompt: str, system: str | None, temperature: float,
+               response_schema: type | None, max_retries: int) -> LLMResult:
+    """One chat completion on Groq. JSON mode plus the schema in the system prompt; the caller
+    validates the JSON with the Pydantic model, exactly as it does for Gemini."""
+    if not settings.groq_api_key:
+        raise RuntimeError(f"JUDGE_MODEL is {model!r} but GROQ_API_KEY is not set in .env.")
+    sys_text = system or ""
+    if response_schema is not None:
+        sys_text += (
+            "\n\nReply with ONLY a JSON object matching this JSON schema:\n"
+            + json.dumps(response_schema.model_json_schema())
+        )
+    body = {
+        "model": model.removeprefix("groq:"),
+        "temperature": temperature,
+        "messages": [{"role": "system", "content": sys_text}, {"role": "user", "content": prompt}],
+    }
+    if response_schema is not None:
+        body["response_format"] = {"type": "json_object"}
+    req = urllib.request.Request(
+        GROQ_URL, data=json.dumps(body).encode("utf-8"), method="POST",
+        headers={"Authorization": f"Bearer {settings.groq_api_key}",
+                 "Content-Type": "application/json", "User-Agent": "policy-rag"},
+    )
+    delay = 10.0
+    for attempt in range(max_retries + 1):
+        _groq_limiter.wait()
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                data = json.loads(r.read().decode("utf-8"))
+            break
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode("utf-8", "replace").lower()
+            if e.code == 429 and ("per day" in detail or "(rpd)" in detail or "(tpd)" in detail):
+                raise DailyQuotaExhausted(
+                    f"Daily Groq free-tier limit for {model} is used up; it resets at 00:00 UTC "
+                    "(05:30 IST). Cached results are still available."
+                ) from e
+            if e.code in (429, 500, 503) and attempt < max_retries:
+                wait = float(e.headers.get("retry-after") or delay)
+                time.sleep(min(wait, 120))
+                delay *= 2
+                continue
+            raise RuntimeError(f"Groq error {e.code}: {detail[:300]}") from e
+    usage = data.get("usage") or {}
+    return LLMResult(
+        text=data["choices"][0]["message"]["content"] or "",
+        model=model,
+        cached=False,
+        input_tokens=usage.get("prompt_tokens", 0),
+        output_tokens=usage.get("completion_tokens", 0),
+    )
+
+
+@traceable(run_type="llm", name="llm", process_outputs=llm_outputs)
 def generate(
     prompt: str,
     *,
@@ -84,7 +146,7 @@ def generate(
     use_cache: bool = True,
     max_retries: int = 5,
 ) -> LLMResult:
-    """Generate text (or JSON matching `response_schema`, a Pydantic model) from Gemini."""
+    """Generate text (or JSON matching `response_schema`, a Pydantic model) from Gemini or Groq."""
     model = model or settings.gen_model
     # The full JSON schema, not just the class name: editing a field must not hit stale cache.
     schema_name = (
@@ -96,6 +158,12 @@ def generate(
     if use_cache and path.exists():
         data = json.loads(path.read_text(encoding="utf-8"))
         return LLMResult(**{**data, "cached": True})
+
+    if model.startswith("groq:"):
+        result = _groq_call(model, prompt, system, temperature, response_schema, max_retries)
+        if use_cache:
+            _save(path, result)
+        return result
 
     from google.genai import errors, types
 
@@ -136,7 +204,11 @@ def generate(
         output_tokens=getattr(usage, "candidates_token_count", 0) or 0,
     )
     if use_cache:
-        CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        payload = {k: v for k, v in result.__dict__.items() if k != "cached"}
-        path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        _save(path, result)
     return result
+
+
+def _save(path, result: LLMResult) -> None:
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    payload = {k: v for k, v in result.__dict__.items() if k != "cached"}
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")

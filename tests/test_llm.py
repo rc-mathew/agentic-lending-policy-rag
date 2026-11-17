@@ -35,3 +35,64 @@ def test_rate_limiter_allows_burst_up_to_rpm():
     for _ in range(5):
         lim.wait()
     assert time.monotonic() - t0 < 0.5
+
+
+class _FakeResponse:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def read(self):
+        return json.dumps(self.payload).encode("utf-8")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def test_groq_judge_path_sends_schema_and_caches(tmp_path, monkeypatch):
+    from pydantic import BaseModel
+
+    class Verdict(BaseModel):
+        ok: bool
+
+    monkeypatch.setattr(llm, "CACHE_DIR", tmp_path)
+    object.__setattr__(llm.settings, "groq_api_key", "test-key")
+    sent = {}
+
+    def fake_urlopen(req, timeout):
+        sent["body"] = json.loads(req.data)
+        sent["auth"] = req.headers["Authorization"]
+        return _FakeResponse({
+            "choices": [{"message": {"content": '{"ok": true}'}}],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 3},
+        })
+
+    monkeypatch.setattr(llm.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(llm, "_get_client", lambda: (_ for _ in ()).throw(AssertionError("no Gemini")))
+
+    r = llm.generate("grade this", system="be strict", model="groq:openai/gpt-oss-120b",
+                     response_schema=Verdict)
+    assert Verdict.model_validate_json(r.text).ok
+    assert sent["body"]["model"] == "openai/gpt-oss-120b"
+    assert sent["body"]["response_format"] == {"type": "json_object"}
+    assert '"ok"' in sent["body"]["messages"][0]["content"]  # schema is in the system prompt
+    assert sent["auth"] == "Bearer test-key"
+    assert (r.input_tokens, r.output_tokens) == (10, 3)
+
+    # Second call is served from the cache: no network.
+    monkeypatch.setattr(llm.urllib.request, "urlopen",
+                        lambda *a, **k: (_ for _ in ()).throw(AssertionError("cached")))
+    assert llm.generate("grade this", system="be strict", model="groq:openai/gpt-oss-120b",
+                        response_schema=Verdict).cached
+    object.__setattr__(llm.settings, "groq_api_key", "")
+
+
+def test_groq_without_key_fails_clearly(tmp_path, monkeypatch):
+    import pytest
+
+    monkeypatch.setattr(llm, "CACHE_DIR", tmp_path)
+    object.__setattr__(llm.settings, "groq_api_key", "")
+    with pytest.raises(RuntimeError, match="GROQ_API_KEY"):
+        llm.generate("x", model="groq:openai/gpt-oss-120b")

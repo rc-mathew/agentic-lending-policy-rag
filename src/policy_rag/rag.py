@@ -28,6 +28,9 @@ Rules:
   answer from general knowledge.
 - RBI Directions are the regulation; a bank's own policy applies only to that bank. Say which one
   a claim comes from when it matters.
+- The FIRST claim answers the question directly. For a yes/no, "is it allowed" or comparison
+  question, start it with Yes, No or Partly and give the reason, citing every source the
+  conclusion rests on (e.g. both the RBI rule and the bank's policy). Supporting facts follow.
 - Keep it short: at most 5 claims, each one sentence."""
 
 

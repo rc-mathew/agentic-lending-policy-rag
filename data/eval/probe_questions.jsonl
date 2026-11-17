@@ -3,7 +3,7 @@
 {"id": "p03", "question": "How many days overdue makes a loan account SMA-2?", "answers": [{"doc_id": "rbi_cb_resolution_of_stressed_assets", "page": 13}]}
 {"id": "p04", "question": "After how many days of overdue instalments does a term loan become a non-performing asset?", "answers": [{"doc_id": "rbi_cb_iracp", "page": 17}]}
 {"id": "p05", "question": "How often must a bank update KYC for a high-risk customer?", "answers": [{"doc_id": "rbi_cb_kyc", "page": 41}]}
-{"id": "p06", "question": "Within how many days must a bank close a credit card once the customer asks?", "answers": [{"doc_id": "rbi_cb_credit_debit_cards", "page": 8}]}
+{"id": "p06", "question": "Within how many days must a bank close a credit card once the customer asks?", "answers": [{"doc_id": "rbi_cb_credit_debit_cards", "page": 11}]}
 {"id": "p07", "question": "What compensation do I get if my credit bureau complaint is not resolved in time?", "answers": [{"doc_id": "rbi_cb_credit_information_reporting", "page": 21}]}
 {"id": "p08", "question": "What is the maximum repayment tenor for a gold metal loan to a jeweller?", "answers": [{"doc_id": "rbi_cb_credit_facilities", "page": 40}]}
 {"id": "p09", "question": "How frequently does a bank have to review and publish its MCLR?", "answers": [{"doc_id": "rbi_cb_interest_rates_on_advances", "page": 9}]}
