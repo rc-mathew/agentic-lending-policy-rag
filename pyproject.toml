@@ -32,6 +32,8 @@ dependencies = [
 eval = ["ragas>=0.3", "langchain-google-genai>=2.0"]
 # Week 2.
 agent = ["langgraph>=1.0", "langsmith>=0.2", "rank-bm25>=0.2"]
+# Week 3: the Streamlit demo (app.py).
+app = ["streamlit>=1.40"]
 dev = ["pytest>=8.0", "ruff>=0.6", "psutil>=5.9"]
 
 [tool.setuptools.packages.find]

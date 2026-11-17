@@ -105,6 +105,21 @@ First live runs of the ReAct agent: "max home loan on a Rs 40 lakh flat" went se
 application?", missed by every chunking strategy, worked after the agent rewrote "SBI" to "State
 Bank of India" in a second search.
 
+## Demo
+
+```bash
+pip install -e ".[agent,app]"
+streamlit run app.py
+```
+
+Pick plain RAG, the ReAct agent or the LangGraph agent, ask a question, and get the cited answer,
+the cited passages (with page numbers, repealed sources flagged), the passages retrieved but not
+cited, and each step the agent took. Questions go through the same guardrails as the eval.
+
+Because it runs on a free Gemini key, the demo caps model calls: `DEMO_SESSION_QUESTIONS`
+(default 10 per visitor) and `DEMO_DAILY_CALLS` (default 300, under the 500/day free limit).
+Cache hits cost nothing, so the example questions are free once answered.
+
 ## Guardrails
 
 Every system runs behind the same wrapper ([`guardrails.py`](src/policy_rag/guardrails.py)), and
