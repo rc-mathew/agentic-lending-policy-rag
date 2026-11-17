@@ -92,6 +92,11 @@ def score_one(item: dict, result, judge: Callable = generate) -> dict:
         "judge_tokens": 0,
         "seconds": round(result.seconds, 2),
         "cached": result.cached,
+        "calls": getattr(result, "calls", 1),
+        "stopped_by": getattr(result, "stopped_by", ""),
+        "trace": [
+            {"action": s.action, "detail": s.detail} for s in getattr(result, "steps", [])
+        ],
     }
     if not expect_answer:
         row["correctness"] = 1.0 if abstained else 0.0
@@ -139,5 +144,6 @@ def summarise(rows: list[dict]) -> dict:
         "avg_system_tokens": round(statistics.mean(r["system_tokens"] for r in rows)) if rows else 0,
         "avg_judge_tokens": round(statistics.mean(r["judge_tokens"] for r in rows)) if rows else 0,
         "latency_p50_s": round(statistics.median(secs), 2) if secs else None,
+        "avg_system_calls": round(statistics.mean(r.get("calls", 1) for r in rows), 2) if rows else 0,
     }
     return out

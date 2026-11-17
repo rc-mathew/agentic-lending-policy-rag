@@ -34,7 +34,11 @@ def make_system(name: str):
         from policy_rag.rag import answer
 
         return lambda q: answer(q, retriever)
-    raise SystemExit(f"unknown system {name!r} (available: plain)")
+    if name == "react":
+        from policy_rag.react_agent import run
+
+        return lambda q: run(q, retriever)
+    raise SystemExit(f"unknown system {name!r} (available: plain, react)")
 
 
 def fmt(v) -> str:
