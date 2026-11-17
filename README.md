@@ -71,6 +71,8 @@ would overstate the gain. Fixes (calculator results as citable sources, an arith
 slab lookup inside the LTV tool) will be scored on a fresh set of calculation questions and
 reported separately.
 
+Why each design choice was made, with the evidence: [`docs/DECISIONS.md`](docs/DECISIONS.md). Rules for AI coding assistants working in this repo: [`AGENTS.md`](AGENTS.md).
+
 ## Chunking: section-aware, chosen on a 15-question probe
 
 Three strategies were embedded with BGE-small and scored on 15 questions, each pinned to the page
