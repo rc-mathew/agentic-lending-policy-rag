@@ -82,17 +82,37 @@ def copy_index(src: Path, dst: Path) -> int:
     return n
 
 
+def check_token(api, namespace: str) -> None:
+    """Fail early with a plain reason instead of the Hub's 403 on create_repo."""
+    me = api.whoami()
+    auth = (me.get("auth") or {}).get("accessToken") or {}
+    role = auth.get("role", "?")
+    print(f"Hugging Face account: {me.get('name')} | token: {auth.get('displayName', '?')} ({role})")
+    if me.get("name") != namespace and namespace not in {o.get("name") for o in me.get("orgs", [])}:
+        raise SystemExit(f"This token belongs to {me.get('name')!r}, not {namespace!r}. "
+                         f"Use --space {me.get('name')}/lending-policy-assistant, or that account's token.")
+    if role == "read":
+        raise SystemExit("This is a Read token. Create a Write token on huggingface.co/settings/tokens "
+                         "and put it in .env as HF_TOKEN.")
+    if not me.get("emailVerified", True):
+        raise SystemExit("Your Hugging Face email is not confirmed yet; new accounts cannot create "
+                         "Spaces until it is. Click the link in Hugging Face's email, then retry.")
+
+
 def push(out: Path, space: str) -> str:
     from dotenv import load_dotenv
     from huggingface_hub import HfApi
 
-    load_dotenv(ROOT / ".env")
+    # override=True: a terminal opened before .env was edited (VS Code's useEnvFile) still holds
+    # the old values in its environment; the file is the source of truth here.
+    load_dotenv(ROOT / ".env", override=True)
     token, gemini = os.getenv("HF_TOKEN", "").strip(), os.getenv("GEMINI_API_KEY", "").strip()
     if not token:
         raise SystemExit("HF_TOKEN is not set in .env (create a write token on huggingface.co).")
     if not gemini:
         raise SystemExit("GEMINI_API_KEY is not set in .env.")
     api = HfApi(token=token)
+    check_token(api, space.split("/")[0])
     api.create_repo(space, repo_type="space", space_sdk="docker", exist_ok=True)
     api.add_space_secret(space, "GEMINI_API_KEY", gemini)
     for key, value in {"GEN_MODEL": os.getenv("GEN_MODEL", "gemini-3.5-flash-lite"),
