@@ -26,10 +26,10 @@ GOLD = ROOT / "data" / "eval" / "gold_candidates.jsonl"
 OUT = ROOT / "data" / "eval" / "results"
 
 
-def make_system(name: str):
+def make_system(name: str, mode: str = "rerank"):
     from policy_rag.retrieve import Retriever
 
-    retriever = Retriever()
+    retriever = Retriever(mode=mode)
     if name == "plain":
         from policy_rag.rag import answer
 
@@ -53,6 +53,7 @@ def fmt(v) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--system", default="plain")
+    ap.add_argument("--retriever", default="rerank", choices=["dense", "hybrid", "rerank"])
     ap.add_argument("--gold", type=Path, default=GOLD)
     ap.add_argument("--include-drafts", action="store_true", help="score unverified items too")
     ap.add_argument("--limit", type=int, default=0)
@@ -65,7 +66,7 @@ def main() -> int:
     if args.limit:
         items = items[: args.limit]
 
-    run = make_system(args.system)
+    run = make_system(args.system, args.retriever)
     rows = []
     try:
         for i, item in enumerate(items, 1):
@@ -79,13 +80,15 @@ def main() -> int:
     if not rows:
         return 1
     OUT.mkdir(parents=True, exist_ok=True)
-    with (OUT / f"{args.system}.jsonl").open("w", encoding="utf-8") as f:
+    name = f"{args.system}_{args.retriever}"
+    with (OUT / f"{name}.jsonl").open("w", encoding="utf-8") as f:
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     s = summarise(rows)
-    s["meta"] = {"system": args.system, "items": len(rows), "of": len(items),
+    s["meta"] = {"system": args.system, "retriever": args.retriever, "items": len(rows),
+                 "of": len(items),
                  "drafts_included": args.include_drafts}
-    (OUT / f"{args.system}_summary.json").write_text(json.dumps(s, indent=2), encoding="utf-8")
+    (OUT / f"{name}_summary.json").write_text(json.dumps(s, indent=2), encoding="utf-8")
 
     print(f"\n{args.system}: {len(rows)} of {len(items)} questions"
           f"{' (includes unverified drafts)' if args.include_drafts else ''}\n")
@@ -100,7 +103,7 @@ def main() -> int:
     c = s["cost"]
     print(f"\navg tokens: system {c['avg_system_tokens']}, judge {c['avg_judge_tokens']} | "
           f"latency p50 {c['latency_p50_s']}s")
-    print(f"Saved {OUT / (args.system + '.jsonl')}")
+    print(f"Saved {OUT / (name + '.jsonl')}")
     return 0
 
 

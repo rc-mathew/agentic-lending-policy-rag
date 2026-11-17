@@ -2,9 +2,9 @@
 
     python scripts/build_index.py
 
-If eval_retrieval.py has already embedded the section-aware chunks (collection
-`probe_section_aware`) and the chunk file has not changed since, the vectors are copied over
-instead of re-embedded, which takes seconds. Otherwise everything is embedded again (~3 min).
+If eval_retrieval.py has already embedded exactly these section-aware chunks (collection
+`probe_section_aware`, same ids AND same text), the vectors are copied over in seconds.
+Otherwise everything is embedded again (~3 min).
 """
 
 from __future__ import annotations
@@ -29,7 +29,6 @@ def main() -> int:
     from qdrant_client.models import Distance, PointStruct, VectorParams
 
     chunks = [json.loads(line) for line in CHUNKS.open(encoding="utf-8")]
-    ids = [c["chunk_id"] for c in chunks]
     client = QdrantClient(path=str(QDRANT_DIR))
     t0 = time.perf_counter()
 
@@ -43,7 +42,10 @@ def main() -> int:
             records.extend(batch)
             if offset is None:
                 break
-        if sorted(r.payload["chunk_id"] for r in records) == sorted(ids):
+        # Reuse only if every chunk is byte-identical: same id is not enough, because a
+        # manifest change (e.g. a bank's name) changes embed_text without changing ids.
+        stored = {r.payload["chunk_id"]: r.payload.get("embed_text") for r in records}
+        if stored == {c["chunk_id"]: c["embed_text"] for c in chunks}:
             points = [PointStruct(id=r.id, vector=r.vector, payload=r.payload) for r in records]
             how = f"copied from {PROBE}"
 

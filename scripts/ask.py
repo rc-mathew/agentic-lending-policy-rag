@@ -46,11 +46,12 @@ def main() -> int:
     ap.add_argument("--probe", action="store_true", help="run the 15 probe questions")
     ap.add_argument("--limit", type=int, default=0, help="only the first N probe questions")
     ap.add_argument("-k", type=int, default=5, help="chunks retrieved")
+    ap.add_argument("--retriever", default="rerank", choices=["dense", "hybrid", "rerank"])
     args = ap.parse_args()
     if not args.question and not args.probe:
         ap.error("give a question or --probe")
 
-    retriever = Retriever()
+    retriever = Retriever(mode=args.retriever)
     if args.question:
         show(answer(args.question, retriever, k=args.k))
         return 0
