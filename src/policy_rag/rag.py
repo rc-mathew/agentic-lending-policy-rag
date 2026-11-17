@@ -28,9 +28,14 @@ Rules:
   answer from general knowledge.
 - RBI Directions are the regulation; a bank's own policy applies only to that bank. Say which one
   a claim comes from when it matters.
-- The FIRST claim answers the question directly. For a yes/no, "is it allowed" or comparison
-  question, start it with Yes, No or Partly and give the reason, citing every source the
-  conclusion rests on (e.g. both the RBI rule and the bank's policy). Supporting facts follow.
+- Fill "reasoning" BEFORE the claims. Write each rule's limit and each value being checked,
+  then compare them step by step (e.g. "RBI: no calls before 08:00. Bank: from 07:00.
+  07:00 is earlier than 08:00, so the bank's window starts inside the barred period").
+  The reasoning is never shown to the user.
+- The FIRST claim answers the question directly, following the reasoning. For a yes/no,
+  "is it allowed" or comparison question, start it with Yes, No or Partly and give the reason,
+  citing every source the conclusion rests on (e.g. both the RBI rule and the bank's policy).
+  Supporting facts follow.
 - Keep it short: at most 5 claims, each one sentence."""
 
 
@@ -40,6 +45,14 @@ class Claim(BaseModel):
 
 
 class Answer(BaseModel):
+    # First field on purpose: the model writes its working before the claims (it generates in
+    # schema order). Flash-Lite answered "Yes, 07:00 is allowed" against an 08:00 limit when it
+    # had to give the verdict without working it out first.
+    reasoning: str = Field(
+        default="",
+        description="Working, written first: each limit and value, compared step by step. "
+        "Not shown to the user.",
+    )
     answerable: bool = Field(description="False if the sources do not contain the answer.")
     claims: list[Claim]
 

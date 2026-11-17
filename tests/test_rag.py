@@ -67,3 +67,14 @@ def test_answer_prompt_requires_a_direct_verdict_first():
 
     assert "FIRST claim answers the question directly" in SYSTEM
     assert "Yes, No or Partly" in SYSTEM
+
+
+def test_answer_schema_puts_reasoning_before_claims():
+    # Regression: forced to give a verdict with no working, Flash-Lite said 07:00 was allowed
+    # under an 08:00 limit. The schema makes it write the comparison first.
+    from policy_rag.rag import SYSTEM, Answer
+
+    fields = list(Answer.model_json_schema()["properties"])
+    assert fields.index("reasoning") < fields.index("claims")
+    assert 'Fill "reasoning" BEFORE the claims' in SYSTEM
+    assert Answer.model_validate({"answerable": False, "claims": []}).reasoning == ""
