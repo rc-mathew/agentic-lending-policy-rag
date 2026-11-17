@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 
 from .llm import generate
 from .retrieve import Hit
+from .tracing import answer_outputs, traceable
 
 SYSTEM = """You answer questions about Indian bank lending rules using ONLY the numbered sources.
 
@@ -79,6 +80,7 @@ def build_prompt(question: str, hits: list[Hit]) -> str:
     return f"Sources:\n\n{format_sources(hits)}\n\nQuestion: {question}"
 
 
+@traceable(run_type="chain", name="plain_rag", process_outputs=answer_outputs)
 def answer(question: str, retriever, k: int = 5, model: str | None = None) -> RagResult:
     t0 = time.perf_counter()
     hits = retriever.search(question, k=k)

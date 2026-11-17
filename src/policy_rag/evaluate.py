@@ -93,6 +93,7 @@ def score_one(item: dict, result, judge: Callable = generate) -> dict:
         "seconds": round(result.seconds, 2),
         "cached": result.cached,
         "calls": getattr(result, "calls", 1),
+        "guardrail": getattr(result, "guardrail", ""),
         "stopped_by": getattr(result, "stopped_by", ""),
         "trace": [
             {"action": s.action, "detail": s.detail} for s in getattr(result, "steps", [])

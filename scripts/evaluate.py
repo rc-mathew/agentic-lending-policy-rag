@@ -27,6 +27,13 @@ OUT = ROOT / "data" / "eval" / "results"
 
 
 def make_system(name: str, mode: str = "rerank"):
+    """Every system is scored behind the same guardrails it runs with in the demo."""
+    from policy_rag.guardrails import guarded
+
+    return guarded(_raw_system(name, mode))
+
+
+def _raw_system(name: str, mode: str):
     from policy_rag.retrieve import Retriever
 
     retriever = Retriever(mode=mode)

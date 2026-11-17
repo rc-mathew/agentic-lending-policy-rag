@@ -18,6 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from policy_rag.guardrails import guarded
 from policy_rag.llm import DailyQuotaExhausted
 from policy_rag.rag import answer
 from policy_rag.retrieve import Retriever
@@ -34,6 +35,8 @@ def show(r) -> None:
         flags.append(f"{r.invalid_citations} invalid citation(s) dropped")
     if r.uncited_claims:
         flags.append(f"{r.uncited_claims} uncited claim(s)")
+    if getattr(r, "guardrail", ""):
+        flags.append(f"guardrail: {r.guardrail}")
     print(
         f"\n[{r.model}{' cached' if r.cached else ''} | {r.input_tokens} in / {r.output_tokens} out "
         f"tokens | {r.seconds:.1f}s{' | ' + '; '.join(flags) if flags else ''}]"
@@ -52,8 +55,9 @@ def main() -> int:
         ap.error("give a question or --probe")
 
     retriever = Retriever(mode=args.retriever)
+    ask = guarded(lambda q: answer(q, retriever, k=args.k))
     if args.question:
-        show(answer(args.question, retriever, k=args.k))
+        show(ask(args.question))
         return 0
 
     probes = [json.loads(line) for line in PROBES.open(encoding="utf-8")]
@@ -62,7 +66,7 @@ def main() -> int:
     rows = []
     try:
         for p in probes:
-            r = answer(p["question"], retriever, k=args.k)
+            r = ask(p["question"])
             show(r)
             gold = {(a["doc_id"], a["page"]) for a in p["answers"]}
             cited = [r.hits[n - 1] for c in r.claims for n in c["sources"]]

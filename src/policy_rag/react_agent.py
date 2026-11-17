@@ -29,6 +29,7 @@ from .rag import SYSTEM as ANSWER_SYSTEM
 from .rag import Answer, RagResult, build_prompt
 from .retrieve import Hit
 from .tools import TOOL_SPECS, call_tool
+from .tracing import answer_outputs, traceable
 
 MAX_STEPS = 5
 MAX_TOKENS = 20_000
@@ -105,6 +106,7 @@ def _history(question: str, steps: list[TraceStep]) -> str:
     return "\n\n".join(parts)
 
 
+@traceable(run_type="chain", name="react_agent", process_outputs=answer_outputs)
 def run(question: str, retriever, model: str | None = None,
         max_steps: int = MAX_STEPS, max_tokens: int = MAX_TOKENS) -> AgentResult:
     t0 = time.perf_counter()

@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from policy_rag import react_agent
+from policy_rag.guardrails import guarded
 from policy_rag.retrieve import Retriever
 
 
@@ -27,9 +28,10 @@ def main() -> int:
     ap.add_argument("--steps", type=int, default=react_agent.MAX_STEPS)
     args = ap.parse_args()
 
-    r = react_agent.run(args.question, Retriever(), max_steps=args.steps)
+    retriever = Retriever()
+    r = guarded(lambda q: react_agent.run(q, retriever, max_steps=args.steps))(args.question)
     print(f"\nQ: {r.question}\n")
-    for i, s in enumerate(r.steps, 1):
+    for i, s in enumerate(getattr(r, "steps", []), 1):
         print(f"STEP {i}  thought: {s.thought}")
         print(f"        action:  {s.action} {s.detail}")
         if s.observation:
@@ -38,8 +40,10 @@ def main() -> int:
             print(textwrap.indent(shown, "        | "))
         print()
     print(r.render())
-    print(f"\n[{r.calls} calls | {r.input_tokens} in / {r.output_tokens} out tokens | "
-          f"{r.seconds:.1f}s | stopped by {r.stopped_by}{' | cached' if r.cached else ''}]")
+    print(f"\n[{getattr(r, 'calls', 0)} calls | {r.input_tokens} in / {r.output_tokens} out tokens | "
+          f"{r.seconds:.1f}s | stopped by {getattr(r, 'stopped_by', 'guardrail')}{' | cached' if r.cached else ''}]")
+    if getattr(r, "guardrail", ""):
+        print(f"[guardrail: {r.guardrail}]")
     return 0
 
 

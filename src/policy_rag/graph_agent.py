@@ -33,6 +33,7 @@ from .rag import Answer, build_prompt
 from .react_agent import AgentResult, TraceStep
 from .retrieve import Hit
 from .tools import TOOL_SPECS, call_tool
+from .tracing import answer_outputs, traceable
 
 MAX_RETRIEVALS = 2
 MAX_TOKENS = 20_000
@@ -228,6 +229,7 @@ def build_graph(retriever, model: str | None = None, max_retrievals: int = MAX_R
     return g.compile()
 
 
+@traceable(run_type="chain", name="graph_agent", process_outputs=answer_outputs)
 def run(question: str, retriever, model: str | None = None, graph=None, **caps) -> AgentResult:
     t0 = time.perf_counter()
     graph = graph or build_graph(retriever, model=model, **caps)

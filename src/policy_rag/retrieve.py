@@ -18,6 +18,7 @@ import re
 from dataclasses import dataclass
 
 from .config import QDRANT_DIR, settings
+from .tracing import retriever_outputs, traceable
 
 COLLECTION = "policy_chunks"
 # BGE v1.5 recommends this prefix for short queries (not for passages).
@@ -127,6 +128,7 @@ class Retriever:
         top = sorted(range(len(scores)), key=lambda i: -scores[i])[:k]
         return [_hit(self.payloads[self.ids[i]], float(scores[i])) for i in top if scores[i] > 0]
 
+    @traceable(run_type="retriever", name="search", process_outputs=retriever_outputs)
     def search(self, query: str, k: int = 5) -> list[Hit]:
         if self.mode == "dense":
             return self.dense(query, k)

@@ -89,6 +89,24 @@ First live runs of the ReAct agent: "max home loan on a Rs 40 lakh flat" went se
 application?", missed by every chunking strategy, worked after the agent rewrote "SBI" to "State
 Bank of India" in a second search.
 
+## Guardrails
+
+Every system runs behind the same wrapper ([`guardrails.py`](src/policy_rag/guardrails.py)), and
+the gold-set scores are measured with it on.
+
+- **Input:** personal identifiers (PAN, Aadhaar, card and account numbers, phone, email) are
+  redacted before any API call or trace; empty, over-long and prompt-injection questions
+  ("ignore previous instructions", "reveal your system prompt") are refused.
+- **Output:** every claim must cite a retrieved source; uncited claims are dropped, and an answer
+  with nothing cited left becomes "I can't answer that from the documents".
+
+## Observability
+
+Opt-in LangSmith tracing ([`tracing.py`](src/policy_rag/tracing.py)): set `LANGSMITH_TRACING=true`
+in `.env`. Each question becomes one trace: guardrail, agent steps or LangGraph nodes, every
+search with its passages, and every Gemini call with tokens and latency. Traces carry the
+redacted question, never the raw one.
+
 ## Stack
 
 Runs on an 8 GB laptop at zero cost.
@@ -101,7 +119,7 @@ Runs on an 8 GB laptop at zero cost.
 | Generation | Gemini (free tier), structured answers with citations |
 | Agent | Hand-written ReAct loop, then LangGraph: router, query rewriter, retrieval grader, EMI/FOIR tools |
 | Evals | RAGAS + 60-question gold set |
-| Observability | LangSmith |
+| Observability | LangSmith (opt-in), per-call tokens and latency |
 | Demo | Streamlit on Hugging Face Spaces |
 
 ### Working inside the free tier
@@ -139,7 +157,8 @@ every document with its source URL and status (current or repealed).
 ## Layout
 
 ```
-src/policy_rag/   config, llm, ingest, chunking, retrieve, rag, tools, react_agent, graph_agent, evaluate
+src/policy_rag/   config, llm, ingest, chunking, retrieve, rag, tools, react_agent, graph_agent,
+                  guardrails, tracing, evaluate
 scripts/          check_setup, download_corpus, extract_pages, chunk_corpus, eval_retrieval,
                   build_index, ask, agent, graph_agent, evaluate
 data/             manifest, corpus notes, eval sets and results (PDFs and processed files git-ignored)

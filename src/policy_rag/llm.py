@@ -19,6 +19,7 @@ from collections import deque
 from dataclasses import dataclass
 
 from .config import CACHE_DIR, settings
+from .tracing import llm_outputs, traceable
 
 
 class DailyQuotaExhausted(RuntimeError):
@@ -72,6 +73,7 @@ def _cache_key(model: str, prompt: str, system: str | None, temperature: float, 
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
+@traceable(run_type="llm", name="gemini", process_outputs=llm_outputs)
 def generate(
     prompt: str,
     *,

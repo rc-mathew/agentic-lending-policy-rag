@@ -31,11 +31,13 @@ def main() -> int:
     if not args.question:
         ap.error("give a question, or --mermaid")
 
+    from policy_rag.guardrails import guarded
     from policy_rag.retrieve import Retriever
 
-    r = graph_agent.run(args.question, Retriever())
+    retriever = Retriever()
+    r = guarded(lambda q: graph_agent.run(q, retriever))(args.question)
     print(f"\nQ: {r.question}\n")
-    for s in r.steps:
+    for s in getattr(r, "steps", []):
         line = f"  {s.action:16} {s.thought}"
         if s.detail:
             line += f"\n  {'':16} -> {s.detail}"
@@ -44,8 +46,10 @@ def main() -> int:
         print(line)
     print()
     print(r.render())
-    print(f"\n[{r.calls} calls | {r.input_tokens} in / {r.output_tokens} out tokens | "
-          f"{r.seconds:.1f}s | stopped: {r.stopped_by}{' | cached' if r.cached else ''}]")
+    print(f"\n[{getattr(r, 'calls', 0)} calls | {r.input_tokens} in / {r.output_tokens} out tokens | "
+          f"{r.seconds:.1f}s | stopped: {getattr(r, 'stopped_by', 'guardrail')}{' | cached' if r.cached else ''}]")
+    if getattr(r, "guardrail", ""):
+        print(f"[guardrail: {r.guardrail}]")
     return 0
 
 
