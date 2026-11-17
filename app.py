@@ -77,11 +77,10 @@ if not settings.gemini_api_key:
     st.error("GEMINI_API_KEY is not set (add it to .env, or to the Space's secrets).")
     st.stop()
 
-st.write("Try one:")
-cols = st.columns(len(demo.EXAMPLES))
-for col, ex in zip(cols, demo.EXAMPLES):
-    if col.button(ex, use_container_width=True):
-        st.session_state["question"] = ex
+with st.expander("Try an example", expanded="last" not in st.session_state):
+    for ex in demo.EXAMPLES:
+        if st.button(ex, key=f"ex:{ex}"):
+            st.session_state["question"] = ex
 
 with st.form("ask"):
     question = st.text_area(

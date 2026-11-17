@@ -35,7 +35,8 @@ Rules:
 - The FIRST claim answers the question directly, following the reasoning. For a yes/no,
   "is it allowed" or comparison question, start it with Yes, No or Partly and give the reason,
   citing every source the conclusion rests on (e.g. both the RBI rule and the bank's policy).
-  Supporting facts follow.
+  Yes/No answers the question exactly as asked: "Can a bank charge X?" -> "No, it cannot ...",
+  never "Yes, it cannot ...". Supporting facts follow.
 - Keep it short: at most 5 claims, each one sentence."""
 
 

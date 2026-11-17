@@ -67,6 +67,8 @@ def test_answer_prompt_requires_a_direct_verdict_first():
 
     assert "FIRST claim answers the question directly" in SYSTEM
     assert "Yes, No or Partly" in SYSTEM
+    # Regression: "Can a bank charge X?" was answered "Yes, a bank cannot charge X".
+    assert 'never "Yes, it cannot' in SYSTEM
 
 
 def test_answer_schema_puts_reasoning_before_claims():

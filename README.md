@@ -120,6 +120,12 @@ Because it runs on a free Gemini key, the demo caps model calls: `DEMO_SESSION_Q
 (default 10 per visitor) and `DEMO_DAILY_CALLS` (default 300, under the 500/day free limit).
 Cache hits cost nothing, so the example questions are free once answered.
 
+Known limitation: the LangGraph planner only routes clearly off-topic questions away, so a
+question about live data ("What is RBI's repo rate today?") is searched twice before the agent
+abstains (4 calls, ~24 s instead of 1). The abstention is correct; it is just costly. Teaching the
+planner to spot live-data questions would fix it, but the gold set has questions of exactly that
+kind, so the change is held back until after the scored runs to avoid tuning on the test set.
+
 ## Guardrails
 
 Every system runs behind the same wrapper ([`guardrails.py`](src/policy_rag/guardrails.py)), and
