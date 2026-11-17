@@ -1,0 +1,53 @@
+{
+  "results": {
+    "dense": {
+      "hit@1": 0.467,
+      "hit@3": 0.733,
+      "hit@5": 0.933,
+      "mrr@5": 0.624,
+      "latency_ms_p50": 41
+    },
+    "hybrid": {
+      "hit@1": 0.533,
+      "hit@3": 0.867,
+      "hit@5": 0.933,
+      "mrr@5": 0.691,
+      "latency_ms_p50": 50
+    },
+    "rerank": {
+      "hit@1": 0.667,
+      "hit@3": 0.867,
+      "hit@5": 1.0,
+      "mrr@5": 0.8,
+      "latency_ms_p50": 1285
+    }
+  },
+  "misses": {
+    "dense": [
+      "p02 rank=4",
+      "p03 rank=3",
+      "p04 rank=2",
+      "p06 rank=3",
+      "p10 rank=5",
+      "p11 rank=4",
+      "p12 rank=2",
+      "p15 rank=>5"
+    ],
+    "hybrid": [
+      "p02 rank=2",
+      "p03 rank=2",
+      "p04 rank=3",
+      "p06 rank=2",
+      "p10 rank=5",
+      "p11 rank=3",
+      "p15 rank=>5"
+    ],
+    "rerank": [
+      "p04 rank=2",
+      "p06 rank=2",
+      "p10 rank=4",
+      "p11 rank=2",
+      "p15 rank=4"
+    ]
+  }
+}
