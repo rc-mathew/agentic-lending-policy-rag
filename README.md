@@ -8,8 +8,7 @@ tools for EMI and FOIR calculations.
 The project compares three systems on the same 60-question gold set: plain RAG, a ReAct agent
 written by hand in plain Python, and a LangGraph agent.
 
-> **Status:** plain RAG and the ReAct agent are scored on the full gold set; the LangGraph run
-> and the Hugging Face demo are next.
+> **Status:** all three systems scored on the full gold set. Hugging Face demo next.
 
 ## Results
 
@@ -22,7 +21,7 @@ no system grades itself. Per-question results: [`data/eval/results/`](data/eval/
 |---|---|---|---|---|---|---|---|---|
 | Plain RAG | 82% | 95% | 94% | 100% | 6% | 1.0 | 2,081 | 3.6 s |
 | Hand-written ReAct agent | **90%** | 93% | 92% | 100% | **0%** | 3.2 | 4,528 | 10.1 s |
-| LangGraph agent | running | | | | | | | |
+| LangGraph agent | **91%** | 92% | 92% | 100% | **0%** | 3.3 | 3,284 | 13.2 s |
 
 By question type (correct):
 
@@ -30,6 +29,7 @@ By question type (correct):
 |---|---|---|---|---|
 | Plain RAG | 93% | 65% | 45% | 100% |
 | ReAct agent | 98% | 90% | 55% | 100% |
+| LangGraph agent | 97% | 95% | 60% | 100% |
 
 *Correct* is the judge's score (1, 0.5 or 0 per question) against the verified answer.
 *Citation accuracy* is the share of claims the judge found supported by the passage they cite.
@@ -50,13 +50,25 @@ as noise.
   g50, even with an EMI tool available), had no tool for plain arithmetic (15 days × ₹100,
   0.40% of ₹50 crore), picked the wrong LTV slab twice (g41, g44), and used the EMI tool on a
   bullet loan (g42).
-- **Costs:** the agent takes 3.2× the calls, 2.2× the tokens and 2.8× the latency of plain RAG.
+- **The two agents score the same within noise (90% vs 91%).** The LangGraph agent uses 27%
+  fewer tokens than ReAct (3,284 vs 4,528: its grader passes on only the passages it keeps) but
+  is slower (13.2 s vs 10.1 s p50: more, smaller sequential calls). It spent its second search on
+  9 questions and routed 3 questions away without searching.
+- **Costs:** an agent takes about 3.3× the calls and 3-4× the latency of plain RAG, for +8-9
+  points overall, almost all of it on multi-hop questions and false refusals.
+- **Root cause of the calculation misses, found in the traces:** on g50 the LangGraph agent
+  called the EMI tool twice and the tenure tool once and got the right figures (₹17,995,
+  ₹18,643, 268.8 months), then left every figure out of the answer. The answer prompt says
+  every claim must cite a numbered source and use only facts stated in the sources; calculator
+  results are not numbered sources, so the model obeys the prompt and drops them. The same rule
+  explains g47 and g49 (15 days × ₹100 and 0.40% of ₹50 crore never appear). The fix is to give
+  calculator results their own source numbers so they can be cited.
 - **Remaining misses are partial answers** that drop a condition (g17: the multi-lender
   condition; g35: the six-month deadline).
 
 These failures were found on the gold set, so fixing them and re-scoring on the same questions
-would overstate the gain. Fixes (an arithmetic tool, slab lookup inside the LTV tool, a
-"compute before finishing" rule) will be scored on a fresh set of calculation questions and
+would overstate the gain. Fixes (calculator results as citable sources, an arithmetic tool,
+slab lookup inside the LTV tool) will be scored on a fresh set of calculation questions and
 reported separately.
 
 ## Chunking: section-aware, chosen on a 15-question probe
