@@ -2,18 +2,30 @@
 
     streamlit run app.py
 
-Needs the Qdrant index (.qdrant/, built by scripts/build_index.py) and GEMINI_API_KEY in .env
-(or in the Space's secrets). Example questions are answered from the cache when it is present.
+Needs the Qdrant index (.qdrant/ from scripts/build_index.py, or the committed copy in
+deploy/index/) and GEMINI_API_KEY in .env (or in the app's Secrets on Streamlit Cloud). Example questions are answered from the cache when it is present.
 """
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 import streamlit as st
+from streamlit.errors import StreamlitSecretNotFoundError
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+
+# On Streamlit Community Cloud the keys live in the app's Secrets, not in .env. Copy plain
+# top-level secrets into the environment before policy_rag reads its settings. Locally there is
+# no secrets file and .env is used as before.
+try:
+    for _key, _value in st.secrets.items():
+        if isinstance(_value, (str, int, float)):
+            os.environ.setdefault(_key, str(_value))
+except StreamlitSecretNotFoundError:
+    pass
 
 from policy_rag import demo
 from policy_rag.config import QDRANT_DIR, settings
@@ -59,7 +71,7 @@ with st.sidebar:
     asked = st.session_state.get("asked", 0)
     st.caption(
         f"Free-tier demo: {max(0, demo.SESSION_LIMIT - asked)} questions left in this session, "
-        f"{budget.left()} model calls left today. Examples are served from cache."
+        f"{budget.left()} model calls left today. Repeated questions are served from cache."
     )
     st.caption("Not legal or financial advice. Check the cited page before relying on an answer.")
 
@@ -74,7 +86,7 @@ if not QDRANT_DIR.exists():
     st.error("The search index is missing. Run `python scripts/build_index.py` first.")
     st.stop()
 if not settings.gemini_api_key:
-    st.error("GEMINI_API_KEY is not set (add it to .env, or to the Space's secrets).")
+    st.error("GEMINI_API_KEY is not set (add it to .env, or to the app's Secrets on Streamlit Cloud).")
     st.stop()
 
 with st.expander("Try an example", expanded="last" not in st.session_state):

@@ -18,6 +18,13 @@ SOURCES_CSV = DATA_DIR / "sources.csv"  # manifest of every PDF (committed)
 QDRANT_DIR = ROOT / ".qdrant"           # local Qdrant storage (git-ignored)
 CACHE_DIR = ROOT / ".cache" / "llm"     # cached LLM responses (git-ignored)
 
+# Hosted demo (Streamlit Community Cloud builds from the GitHub repo, where .qdrant/ is
+# git-ignored): fall back to the committed copy in deploy/index/, which holds only the
+# policy_chunks collection. A local checkout keeps using its own .qdrant/.
+DEPLOY_INDEX = ROOT / "deploy" / "index"
+if not QDRANT_DIR.exists() and DEPLOY_INDEX.exists():
+    QDRANT_DIR = DEPLOY_INDEX
+
 
 def _env(name: str, default: str = "") -> str:
     return os.getenv(name, default).strip()

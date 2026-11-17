@@ -54,4 +54,4 @@ streamlit run app.py          # demo (needs .qdrant/ and GEMINI_API_KEY)
 | `scripts/` | command-line entry points |
 | `data/eval/` | probe set, gold set, held-out calculation set, results |
 | `docs/DECISIONS.md` | why each design choice was made, with the evidence |
-| `app.py` | Streamlit demo |
+| `app.py` | Streamlit demo (hosted on Streamlit Community Cloud from `requirements.txt` and `deploy/index/`) |

@@ -174,19 +174,18 @@ cited, and each step the agent took. Questions go through the same guardrails as
 
 Because it runs on a free Gemini key, the demo caps model calls: `DEMO_SESSION_QUESTIONS`
 (default 10 per visitor) and `DEMO_DAILY_CALLS` (default 300, under the 500/day free limit).
-Cache hits cost nothing, so the example questions are free once answered.
+Repeated questions are served from the response cache and cost nothing.
 
-Deploying it as a Hugging Face Space (Docker; HF retired its built-in Streamlit SDK):
-`python scripts/build_space.py --push --space <user>/lending-policy-assistant`. The script ships
-the app, the runtime modules, only the `policy_chunks` index and the response cache; the Gemini
-key goes in as a Space secret, never into a file. The Space shares the owner's Gemini quota, so it
-is capped at 200 model calls a day.
+**Hosting** (free): Streamlit Community Cloud builds the app straight from this repo, using
+`requirements.txt` (CPU-only PyTorch) and the committed index in `deploy/index/` (only the
+`policy_chunks` collection, 12 MB; refresh it with `python scripts/refresh_deploy_data.py`). The
+Gemini key goes in the app's Secrets, never in the repo. Hugging Face Spaces was the first
+plan, but HF now requires a paid plan for Docker and Gradio Spaces.
 
-Known limitation (fixed after the scored runs, see `docs/DECISIONS.md` #12): the LangGraph planner only routes clearly off-topic questions away, so a
-question about live data ("What is RBI's repo rate today?") is searched twice before the agent
-abstains (4 calls, ~24 s instead of 1). The abstention is correct; it is just costly. Teaching the
-planner to spot live-data questions would fix it, but the gold set has questions of exactly that
-kind, so the change is held back until after the scored runs to avoid tuning on the test set.
+Fixed after the scored runs (`docs/DECISIONS.md` #12): the LangGraph planner used to search
+twice before abstaining on live-data questions ("What is RBI's repo rate today?": 4 calls,
+~24 s). It now routes them away first. The change waited until after scoring because the gold
+set has questions of exactly that kind.
 
 ## Guardrails
 
@@ -219,7 +218,7 @@ Runs on an 8 GB laptop at zero cost.
 | Agent | Hand-written ReAct loop, then LangGraph: router, query rewriter, retrieval grader, EMI/FOIR tools |
 | Evals | RAGAS + 60-question gold set |
 | Observability | LangSmith (opt-in), per-call tokens and latency |
-| Demo | Streamlit on Hugging Face Spaces |
+| Demo | Streamlit, hosted free on Streamlit Community Cloud |
 
 ### Working inside the free tier
 

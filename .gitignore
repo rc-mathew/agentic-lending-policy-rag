@@ -225,3 +225,4 @@ data/raw/*
 data/processed/*
 !data/processed/.gitkeep
 .qdrant/
+deploy/index/.lock

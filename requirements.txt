@@ -1,5 +1,6 @@
-# Runtime only (no PDF ingestion, no eval). Versions match the laptop the index was built on;
-# qdrant-client in particular must read the local index format it was written with.
+# For Streamlit Community Cloud, which installs from this file. Local development uses
+# pyproject.toml (pip install -e ".[agent,app,dev]"). Runtime only: no PDF ingestion or eval.
+# CPU-only PyTorch: the default wheel pulls several GB of CUDA libraries the demo never uses.
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.15.0+cpu
 sentence-transformers==6.3.0
