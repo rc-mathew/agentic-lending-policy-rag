@@ -52,6 +52,22 @@ What this does and does not show:
 Reproduce: `python scripts/extract_pages.py`, `python scripts/chunk_corpus.py`,
 `python scripts/eval_retrieval.py`.
 
+### Search: hybrid + re-ranker
+
+On the same 15 probe questions and the section-aware index
+([`eval_search_modes.py`](scripts/eval_search_modes.py), no LLM calls):
+
+| Search | Hit@1 | Hit@3 | Hit@5 | MRR@5 | p50 latency (CPU) |
+|---|---|---|---|---|---|
+| Dense (BGE-small) | 47% | 73% | 93% | 0.62 | 41 ms |
+| Hybrid (BM25 + dense, RRF) | 53% | 87% | 93% | 0.69 | 50 ms |
+| **Hybrid + cross-encoder re-rank** | **67%** | **87%** | **100%** | **0.80** | 1,285 ms |
+
+BM25 catches exact wording that embeddings blur; the cross-encoder (`ms-marco-MiniLM-L-6-v2`)
+re-scores the top 20 by reading question and passage together. The SBI question that dense search
+never found now comes back at rank 4. The price is ~1.3 s per search on a laptop CPU, which
+matters for agents that search several times per question. Re-rank is the default for all systems.
+
 ## Agents
 
 Two agents wrap the same retriever, calculators and cited-answer format, so the gold set scores
