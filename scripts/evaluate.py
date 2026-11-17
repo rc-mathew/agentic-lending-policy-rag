@@ -3,6 +3,8 @@
     python scripts/evaluate.py --system plain                   # verified gold items only
     python scripts/evaluate.py --system plain --include-drafts  # all 60 candidates
     python scripts/evaluate.py --system plain --limit 5         # quick check
+    python scripts/evaluate.py --system graph --gold data/eval/calc_holdout.jsonl
+    python scripts/evaluate.py --system graph --gold data/eval/calc_holdout.jsonl --calc-mode v1
 
 Writes data/eval/results/<system>.jsonl (one row per question) and <system>_summary.json, and
 prints the scores by question type. Calls are cached, so after a quota stop a re-run resumes
@@ -13,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -64,7 +67,10 @@ def main() -> int:
     ap.add_argument("--gold", type=Path, default=GOLD)
     ap.add_argument("--include-drafts", action="store_true", help="score unverified items too")
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--calc-mode", choices=["v1", "v2"], default="v2",
+                    help="v1 = calculator setup of the scored gold runs (ablation)")
     args = ap.parse_args()
+    os.environ["CALC_MODE"] = args.calc_mode  # read when the agent modules are imported
 
     items = load_gold(args.gold, include_drafts=args.include_drafts)
     if not items:
@@ -87,14 +93,21 @@ def main() -> int:
     if not rows:
         return 1
     OUT.mkdir(parents=True, exist_ok=True)
+    # Default gold set keeps the original names; other question files and v1 get suffixes,
+    # so a held-out run never overwrites the gold-set results.
     name = f"{args.system}_{args.retriever}"
+    if args.gold.resolve() != GOLD.resolve():
+        name += f"_{args.gold.stem}"
+    if args.calc_mode != "v2":
+        name += f"_calc{args.calc_mode}"
     with (OUT / f"{name}.jsonl").open("w", encoding="utf-8") as f:
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     s = summarise(rows)
     s["meta"] = {"system": args.system, "retriever": args.retriever, "items": len(rows),
                  "of": len(items),
-                 "drafts_included": args.include_drafts}
+                 "drafts_included": args.include_drafts, "gold": args.gold.name,
+                 "calc_mode": args.calc_mode}
     (OUT / f"{name}_summary.json").write_text(json.dumps(s, indent=2), encoding="utf-8")
 
     print(f"\n{args.system}: {len(rows)} of {len(items)} questions"

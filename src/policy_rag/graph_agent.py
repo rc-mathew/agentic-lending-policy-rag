@@ -29,10 +29,10 @@ from pydantic import BaseModel, Field
 
 from .llm import generate
 from .rag import SYSTEM as ANSWER_SYSTEM
-from .rag import Answer, build_prompt, calculator_hits
+from .rag import Answer, prompt_with_calculations
 from .react_agent import AgentResult, TraceStep
 from .retrieve import Hit
-from .tools import TOOL_SPECS, call_tool
+from .tools import active_specs, active_tool_names, call_tool
 from .tracing import answer_outputs, traceable
 
 MAX_RETRIEVALS = 2
@@ -61,7 +61,7 @@ class Grade(BaseModel):
 
 
 class ToolCall(BaseModel):
-    tool: Literal["emi", "tenure_for_emi", "foir", "max_loan_for_ltv"]
+    tool: Literal[active_tool_names()]
     args_json: str = Field(description='Arguments as JSON, e.g. {"principal": 2000000}')
 
 
@@ -90,7 +90,7 @@ passages (LTV caps, rates, days, amounts) and numbers given in the question. At 
 Tools:
 """ + "\n".join(
     f"- {t['name']}({', '.join(t['parameters']['properties'])}): {t['description']}"
-    for t in TOOL_SPECS
+    for t in active_specs()
 )
 
 
@@ -210,9 +210,8 @@ def build_graph(retriever, model: str | None = None, max_retrievals: int = MAX_R
         return {**usage, "calcs": calcs, "steps": steps}
 
     def generate_node(state: State) -> dict:
-        # Computed figures become numbered sources, so the answer can cite them.
-        hits = state["hits"] + calculator_hits(state["calcs"])
-        prompt = build_prompt(state["question"], hits)
+        # v2: computed figures become numbered sources, so the answer can cite them.
+        prompt, hits = prompt_with_calculations(state["question"], state["hits"], state["calcs"])
         a, usage = llm(state, prompt, ANSWER_SYSTEM, Answer)
         stopped = state.get("stopped_by") or (
             "out_of_scope" if state["route"] == "out_of_scope"

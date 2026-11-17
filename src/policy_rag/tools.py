@@ -9,6 +9,7 @@ from __future__ import annotations
 import ast
 import math
 import operator
+import os
 
 
 def _check_positive(**values: float) -> None:
@@ -215,11 +216,33 @@ TOOLS = {"emi": emi, "tenure_for_emi": tenure_for_emi, "foir": foir,
          "arithmetic": arithmetic}
 
 
+# CALC_MODE=v1 reproduces the scored runs' calculator setup for an ablation: the original four
+# tools, results passed to the answer step as unnumbered notes. Default v2: all tools, results
+# as citable sources. Read when an agent module is imported, so set it before importing them.
+V1_TOOLS = ("emi", "tenure_for_emi", "foir", "max_loan_for_ltv")
+
+
+def calc_mode() -> str:
+    mode = os.getenv("CALC_MODE", "v2").strip().lower()
+    if mode not in ("v1", "v2"):
+        raise ValueError(f"CALC_MODE must be v1 or v2, got {mode!r}")
+    return mode
+
+
+def active_tool_names() -> tuple[str, ...]:
+    return V1_TOOLS if calc_mode() == "v1" else tuple(TOOLS)
+
+
+def active_specs() -> list[dict]:
+    names = active_tool_names()
+    return [t for t in TOOL_SPECS if t["name"] in names]
+
+
 def call_tool(name: str, args: dict) -> dict:
     """Run a tool by name; errors come back as data so the agent can recover."""
-    fn = TOOLS.get(name)
+    fn = TOOLS.get(name) if name in active_tool_names() else None
     if fn is None:
-        return {"error": f"unknown tool {name!r}; available: {sorted(TOOLS)}"}
+        return {"error": f"unknown tool {name!r}; available: {sorted(active_tool_names())}"}
     try:
         return {"result": fn(**args)}
     except (TypeError, ValueError) as e:

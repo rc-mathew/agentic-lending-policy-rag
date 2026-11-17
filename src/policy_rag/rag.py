@@ -111,6 +111,24 @@ def calculator_hits(calcs: list[str], start: int = 0) -> list[Hit]:
     ]
 
 
+def prompt_with_calculations(question: str, hits: list[Hit], calcs: list[str]):
+    """Answer prompt plus calculator results. Returns (prompt, hits the citations index into).
+
+    v2 (default): results are numbered sources after the passages. v1 (CALC_MODE=v1, the scored
+    runs): results are appended as unnumbered notes, which the answer rule then drops.
+    """
+    from .tools import calc_mode
+
+    if calc_mode() == "v1":
+        prompt = build_prompt(question, hits)
+        if calcs:
+            prompt += ("\n\nCalculator results (exact; use these numbers, cite the rule's "
+                       "source):\n" + "\n".join(f"- {c}" for c in calcs))
+        return prompt, hits
+    hits = hits + calculator_hits(calcs)
+    return build_prompt(question, hits), hits
+
+
 def build_prompt(question: str, hits: list[Hit]) -> str:
     return f"Sources:\n\n{format_sources(hits)}\n\nQuestion: {question}"
 

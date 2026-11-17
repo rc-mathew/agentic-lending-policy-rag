@@ -26,9 +26,9 @@ from pydantic import BaseModel, Field
 
 from .llm import generate
 from .rag import SYSTEM as ANSWER_SYSTEM
-from .rag import Answer, RagResult, build_prompt, calculator_hits
+from .rag import Answer, RagResult, prompt_with_calculations
 from .retrieve import Hit
-from .tools import TOOL_SPECS, call_tool
+from .tools import active_specs, active_tool_names, call_tool
 from .tracing import answer_outputs, traceable
 
 MAX_STEPS = 5
@@ -38,7 +38,7 @@ SEARCH_K = 4
 # sit late in a chunk (RBI's 8:00 a.m. recovery-call limit is at char 1,109).
 SNIPPET_CHARS = 2000
 
-Action = Literal["search", "emi", "tenure_for_emi", "foir", "max_loan_for_ltv", "finish"]
+Action = Literal[("search", *active_tool_names(), "finish")]
 
 
 class Step(BaseModel):
@@ -52,7 +52,7 @@ class Step(BaseModel):
 
 def _tools_text() -> str:
     lines = ["- search(query): find passages in RBI Directions and bank lending policies."]
-    for t in TOOL_SPECS:
+    for t in active_specs():
         params = ", ".join(t["parameters"]["properties"])
         lines.append(f"- {t['name']}({params}): {t['description']}")
     lines.append("- finish: you have enough evidence (or none exists) to answer.")
@@ -157,8 +157,7 @@ def run(question: str, retriever, model: str | None = None,
             steps.append(TraceStep(step.thought, step.action, json.dumps(args), obs))
 
     # Final answer: same schema and checks as plain RAG, over everything collected.
-    hits = hits + calculator_hits(calcs)  # computed figures are citable sources too
-    prompt = build_prompt(question, hits)
+    prompt, hits = prompt_with_calculations(question, hits, calcs)  # v2: results are sources
     final = generate(prompt, system=ANSWER_SYSTEM, model=model, response_schema=Answer)
     calls += 1
     tokens_in += final.input_tokens

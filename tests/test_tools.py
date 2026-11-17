@@ -90,3 +90,32 @@ def test_arithmetic(expr, value):
 ])
 def test_arithmetic_refuses_anything_but_arithmetic(expr):
     assert "error" in tools.call_tool("arithmetic", {"expression": expr})
+
+
+def test_calc_mode_v1_reproduces_the_scored_runs(monkeypatch):
+    from policy_rag.rag import prompt_with_calculations
+    from policy_rag.retrieve import Hit
+
+    hit = Hit(1.0, "c1", "d", "Doc", "RBI", "in_force", 3, 3, "Ch 1", "LTV 80%")
+    calcs = ['max_loan_for_ltv({"collateral_value": 4000000, "ltv_pct": 80}) = 3200000']
+
+    monkeypatch.setenv("CALC_MODE", "v2")
+    prompt, hits = prompt_with_calculations("q", [hit], calcs)
+    assert len(hits) == 2 and "[2] Calculator: max_loan_for_ltv" in prompt
+    assert "result" in tools.call_tool("arithmetic", {"expression": "2 * 3"})
+
+    monkeypatch.setenv("CALC_MODE", "v1")
+    prompt, hits = prompt_with_calculations("q", [hit], calcs)
+    assert len(hits) == 1 and "Calculator results (exact" in prompt and "[2]" not in prompt
+    assert "error" in tools.call_tool("arithmetic", {"expression": "2 * 3"})
+    assert tools.active_tool_names() == tools.V1_TOOLS
+
+
+def test_agents_can_choose_the_new_tools():
+    # Regression: both agents' action schemas listed only the original four tools.
+    import typing
+
+    from policy_rag import graph_agent, react_agent
+
+    assert "arithmetic" in typing.get_args(react_agent.Action)
+    assert "max_loan_by_slabs" in typing.get_args(graph_agent.ToolCall.model_fields["tool"].annotation)
