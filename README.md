@@ -10,7 +10,8 @@ tools for EMI and FOIR calculations.
 The project compares three systems on the same 60-question gold set: plain RAG, a ReAct agent
 written by hand in plain Python, and a LangGraph agent.
 
-> **Status:** all three systems scored on the full gold set. Hugging Face demo next.
+> **Live demo:** [lending-policy-assistant.streamlit.app](https://lending-policy-assistant.streamlit.app)
+> (free tier: the app sleeps when idle, so the first load can take a minute).
 
 ## Results
 
@@ -162,6 +163,8 @@ application?", missed by every chunking strategy, worked after the agent rewrote
 Bank of India" in a second search.
 
 ## Demo
+
+Live: [lending-policy-assistant.streamlit.app](https://lending-policy-assistant.streamlit.app). To run it locally:
 
 ```bash
 pip install -e ".[agent,app]"
