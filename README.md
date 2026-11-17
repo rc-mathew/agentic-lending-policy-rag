@@ -1,5 +1,7 @@
 # Agentic Lending Policy RAG
 
+[![tests](https://github.com/rc-mathew/agentic-lending-policy-rag/actions/workflows/tests.yml/badge.svg)](https://github.com/rc-mathew/agentic-lending-policy-rag/actions/workflows/tests.yml)
+
 An assistant that answers credit and lending policy questions from RBI Master Directions and
 published bank lending policies, **with a citation for every claim**. An agent decides when and
 how to retrieve, rewrites vague questions, checks its own evidence before answering, and calls

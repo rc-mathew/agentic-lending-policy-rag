@@ -1,0 +1,35 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      # CPU-only PyTorch first, so sentence-transformers does not pull the multi-GB CUDA build.
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -e ".[agent,app,dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      # Offline: fakes stand in for Gemini, Groq and the search index. No secrets needed.
+      - name: Test
+        run: pytest -q
