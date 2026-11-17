@@ -1,6 +1,19 @@
 # Agentic Lending Policy RAG
 
 [![tests](https://github.com/rc-mathew/agentic-lending-policy-rag/actions/workflows/tests.yml/badge.svg)](https://github.com/rc-mathew/agentic-lending-policy-rag/actions/workflows/tests.yml)
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://lending-policy-assistant.streamlit.app)
+
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![Gemini](https://img.shields.io/badge/LLM-Gemini_3.5_Flash--Lite-8E75B2?logo=googlegemini&logoColor=white)
+![LangGraph](https://img.shields.io/badge/Agents-LangGraph-1C3C3C?logo=langchain&logoColor=white)
+![LangSmith](https://img.shields.io/badge/Tracing-LangSmith-1C3C3C?logo=langchain&logoColor=white)
+![Qdrant](https://img.shields.io/badge/Vector_DB-Qdrant-DC244C)
+![Sentence Transformers](https://img.shields.io/badge/Embeddings-BGE--small_%2B_MiniLM_reranker-FFD21E?logo=huggingface&logoColor=black)
+![BM25](https://img.shields.io/badge/Search-Hybrid_BM25_%2B_RRF-555555)
+![Groq](https://img.shields.io/badge/Judge-Groq_gpt--oss--120b-F55036)
+![Pydantic](https://img.shields.io/badge/Structured_output-Pydantic-E92063?logo=pydantic&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Demo-Streamlit-FF4B4B?logo=streamlit&logoColor=white)
+![pytest](https://img.shields.io/badge/Tests-pytest-0A9EDC?logo=pytest&logoColor=white)
 
 An assistant that answers credit and lending policy questions from RBI Master Directions and
 published bank lending policies, **with a citation for every claim**. An agent decides when and
