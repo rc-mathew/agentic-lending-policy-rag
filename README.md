@@ -126,6 +126,28 @@ of options and left every figure out; ReAct never called a calculator. That is t
 again, so numbered calculator sources were not the whole fix for questions that ask for
 "options". It stays open: fixing it on these questions would tune to the holdout.
 
+### "Options" questions: fix scored on 5 more new questions
+
+The f08 fix (DECISIONS #13: every calculator figure goes in the answer, and an "options"
+question gets each option with its figures) was scored on
+[`data/eval/calc_holdout2.jsonl`](data/eval/calc_holdout2.jsonl): 3 rate-reset "options"
+questions and 2 two-figure LTV questions, written before the fix and checked against the PDFs.
+Before = the commit just before the fix (`16b58bd`), after = the fix.
+
+| System | Correct before | Correct after | Citation acc. before / after | Tokens before / after |
+|---|---|---|---|---|
+| LangGraph | 70% | **100%** | 100% / 100% | 4,225 / 5,215 |
+| ReAct | 90% | 80% | 100% / 87% | 6,998 / 6,899 |
+
+- **LangGraph gains on the exact failure.** Before, h03 left out the computed new tenure and
+  h02 skipped the search and answered wrong; after, both are complete. Cost: +23% tokens.
+- **ReAct does not gain.** The changed scores are h03 (the same tool calls both times, judged
+  1.0 then 0.5: judge noise) and h05 (a different LTV tool, citations judged weaker).
+  With 5 questions, one question is 20 points; read this as "no effect" on ReAct.
+- **New finding, open:** on h01 and h02 ReAct called the EMI tools and finished without
+  searching, in both runs, so the RBI rule on reset options is missing from its answer. When
+  the question carries all the numbers, ReAct treats it as arithmetic only.
+
 Why each design choice was made, with the evidence: [`docs/DECISIONS.md`](docs/DECISIONS.md). Rules for AI coding assistants working in this repo: [`AGENTS.md`](AGENTS.md).
 
 ## Chunking: section-aware, chosen on a 15-question probe

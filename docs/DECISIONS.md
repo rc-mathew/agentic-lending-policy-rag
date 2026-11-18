@@ -148,4 +148,10 @@ the order the decisions were made.
   and an options question gets each option with its figures. ReAct and the LangGraph planner
   now call a calculator when the question gives numbers to work with, "options" included.
 - **Judged on:** 5 new questions (`data/eval/calc_holdout2.jsonl`: rate-reset options and
-  two-figure LTV questions), written before the fix. Not on f08, where the failure was found.
+  two-figure LTV questions), written before the fix and checked against the PDFs. Not on f08,
+  where the failure was found.
+- **Result:** LangGraph 70% to 100% correct (the computed tenure now appears; the planner now
+  searches on h02). ReAct 90% to 80%, within noise: one question moved on identical tool calls.
+  Kept, because the shared answer rule is what fixed LangGraph and ReAct shows no real loss.
+- **Still open:** ReAct finishes without searching when the question carries all the numbers
+  (h01, h02 in both runs), so the RBI rule is missing from its answer.
