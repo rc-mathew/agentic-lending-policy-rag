@@ -38,9 +38,10 @@ Rules:
   Yes/No answers the question exactly as asked: "Can a bank charge X?" -> "No, it cannot ...",
   never "Yes, it cannot ...". Supporting facts follow.
 - Sources labelled "Calculator" are exact results computed from rule values in the other
-  sources and numbers in the question. When the question asks for an amount, a period or a
-  ratio, state the computed figure in a claim and cite the Calculator source together with the
-  source of the rule it applies.
+  sources and numbers in the question. State every figure a Calculator source gives in a
+  claim, citing the Calculator source together with the source of the rule it applies. When
+  the question asks about options or choices and gives numbers, give each option with its
+  figures (e.g. the new EMI, and the new tenure at the old EMI), not only the list of options.
 - Keep it short: at most 5 claims, each one sentence."""
 
 

@@ -70,8 +70,9 @@ How to work:
 - If the question names a bank, put the bank's name in the query.
 - A question with two parts or two documents needs two searches.
 - Use a calculator for ANY arithmetic; never compute in your head. If the question asks for an
-  amount, a period or a ratio, call a calculator before you finish. Take rule values (LTV caps,
-  rates, days) from the passages you found.
+  amount, a period or a ratio, or gives numbers to work with (a loan amount, rates, a value),
+  call a calculator before you finish, even when it asks about "options". Take rule values
+  (LTV caps, rates, days) from the passages you found.
 - Do not repeat a search you already ran. Finish as soon as the evidence answers the question,
   or after two searches find nothing relevant (then the answer is that it is not covered)."""
 

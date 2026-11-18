@@ -78,7 +78,8 @@ and banks' own lending policies).
   reviewed, when a reset may happen) are "search".
 - Write 1-3 search queries in the documents' formal wording. Split questions with two parts or
   two documents into separate queries. Expand bank abbreviations (SBI -> State Bank of India).
-- needs_calculation = true if an amount, EMI, ratio, days or compensation must be computed."""
+- needs_calculation = true if an amount, EMI, ratio, days or compensation must be computed,
+  or the question gives numbers (a loan amount, rates, a value) and asks about options."""
 
 GRADE_SYSTEM = """You check retrieved passages for a question about Indian lending rules.
 - relevant: numbers of passages that contain facts needed for the answer.

@@ -131,3 +131,16 @@ the order the decisions were made.
 - **Evidence:** "What is RBI's repo rate today?" cost the LangGraph agent 4 calls and 24 s
   before it abstained correctly. Held back until after the scored runs because the gold set
   has questions of exactly this kind.
+
+## 13. Computed figures must appear in "options" answers (after the holdout)
+
+- **Evidence:** holdout f08 ("My ₹35 lakh, 15-year loan resets from 8.5% to 9%. What are my
+  EMI and tenure options?"). The LangGraph agent computed both EMIs and the new tenure, then
+  answered with RBI's list of options only; ReAct never called a calculator. The answer rule
+  asked for computed figures only when the question "asks for an amount, a period or a ratio",
+  and an "options" question does not read as one.
+- **Chose:** the answer rule now says every figure a Calculator source gives goes in a claim,
+  and an options question gets each option with its figures. ReAct and the LangGraph planner
+  now call a calculator when the question gives numbers to work with, "options" included.
+- **Judged on:** 5 new questions (`data/eval/calc_holdout2.jsonl`: rate-reset options and
+  two-figure LTV questions), written before the fix. Not on f08, where the failure was found.
