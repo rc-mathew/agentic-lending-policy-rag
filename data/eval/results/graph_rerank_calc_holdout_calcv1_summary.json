@@ -1,0 +1,35 @@
+{
+  "overall": {
+    "n": 10,
+    "correctness": 0.75,
+    "citation_accuracy": 0.7,
+    "retrieval_hit": 1,
+    "cites_gold": 1,
+    "abstention_correct": null,
+    "false_refusal": 0
+  },
+  "calculation": {
+    "n": 10,
+    "correctness": 0.75,
+    "citation_accuracy": 0.7,
+    "retrieval_hit": 1,
+    "cites_gold": 1,
+    "abstention_correct": null,
+    "false_refusal": 0
+  },
+  "cost": {
+    "avg_system_tokens": 3988,
+    "avg_judge_tokens": 1566,
+    "latency_p50_s": 16.97,
+    "avg_system_calls": 4
+  },
+  "meta": {
+    "system": "graph",
+    "retriever": "rerank",
+    "items": 10,
+    "of": 10,
+    "drafts_included": false,
+    "gold": "calc_holdout.jsonl",
+    "calc_mode": "v1"
+  }
+}

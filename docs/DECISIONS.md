@@ -114,7 +114,13 @@ the order the decisions were made.
   the agents' action schemas now come from the tool registry (they had listed only the
   original four tools).
 - **Judged on:** 10 new calculation questions (`data/eval/calc_holdout.jsonl`), before
-  (`--calc-mode v1`) and after. Results go in the README when run.
+  (`--calc-mode v1`) and after. Citation accuracy 70% to 90% (LangGraph) and 72% to 100%
+  (ReAct); correctness 75% to 75% and 65% to 80%. Full table in the README.
+- **Cost of the change:** the new slab tool read a misnamed key (`"limit"`, `"max"`) as "no
+  upper bound" and returned the highest-LTV slab, breaking 3 answers (f01 in both agents, f02 in
+  LangGraph). The agents never saw the key names: the tool list in their prompt shows only
+  parameter names and the description. Fix: the keys are in the description, and any other key
+  is an error, not a default. A tool that guesses at bad input fails silently and fluently.
 
 ## 12. Live-data questions are routed away before searching (after the scored runs)
 

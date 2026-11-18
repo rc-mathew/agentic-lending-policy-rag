@@ -83,9 +83,40 @@ as noise.
   condition; g35: the six-month deadline).
 
 These failures were found on the gold set, so fixing them and re-scoring on the same questions
-would overstate the gain. Fixes (calculator results as citable sources, an arithmetic tool,
-slab lookup inside the LTV tool) will be scored on a fresh set of calculation questions and
-reported separately.
+would overstate the gain. The fixes were scored on 10 new calculation questions instead.
+
+### Calculation fix, scored on 10 new questions
+
+v2 makes calculator results numbered "Calculator" sources the answer can cite, and adds a slab
+LTV tool and an arithmetic tool. Before (`--calc-mode v1`) and after, on
+[`data/eval/calc_holdout.jsonl`](data/eval/calc_holdout.jsonl), written and checked after the
+scored runs:
+
+| System | Mode | Correct | Citation acc. | Tokens / question | Latency p50 |
+|---|---|---|---|---|---|
+| LangGraph | v1 | 75% | 70% | 3,988 | 17.0 s |
+| LangGraph | v2 | 75% | **90%** | 4,270 | 15.8 s |
+| ReAct | v1 | 65% | 72% | 5,694 | 26.7 s |
+| ReAct | v2 | **80%** | **100%** | 6,498 | 13.6 s |
+
+- **Citation accuracy is the clear gain (+20 and +28 points).** In v1 the right figure was often
+  in the answer but cited to a passage that does not state it; the judge gave half credit on 6
+  of 10 LangGraph answers ("total not directly stated in source"). In v2 the figure cites the
+  calculator, and 9 of those 10 half-credit cases went to full credit.
+- **Correctness is mixed, and v2 brought in a new bug.** v2 fixed 6 questions across the two
+  agents and broke 3, all with the new slab tool: f01 (gold loan on ₹5 lakh) came out ₹4.25 lakh
+  instead of ₹4 lakh in both agents, and LangGraph said ₹80 lakh instead of ₹75 lakh on f02. The
+  agents wrote the slab bound as `"limit"` or `"max"` instead of `"up_to"`; the tool read a
+  missing `"up_to"` as "no upper bound", so every slab looked open-ended and the highest LTV won.
+  The tool description shown to the agents never named the keys. Fixed afterwards: the keys are
+  in the description and any other key is an error, never a silent default.
+- **f08 is still wrong in both modes:** the answer leaves out the EMI and tenure figures.
+- **Tokens up 7-14%** (calculator sources are longer prompts). ReAct got faster because it
+  stopped looping.
+
+With 10 questions, one question is 10 points; read these as direction, not precise rates. The
+table is the clean holdout result. The slab-key fix was found on these same questions, so a
+re-run after it is a check that the bug is gone, not a new score.
 
 Why each design choice was made, with the evidence: [`docs/DECISIONS.md`](docs/DECISIONS.md). Rules for AI coding assistants working in this repo: [`AGENTS.md`](AGENTS.md).
 
