@@ -267,7 +267,7 @@ Runs on an 8 GB laptop at zero cost.
 | Layer | Choice |
 |---|---|
 | Ingestion | `pypdf` (pdfplumber fallback for fragmented PDFs), page numbers kept for citations; section-aware chunking |
-| Embeddings | BGE-small (`BAAI/bge-small-en-v1.5`, CPU) vs Gemini embeddings |
+| Embeddings | BGE-small (`BAAI/bge-small-en-v1.5`), local on CPU |
 | Vector store | Qdrant, local mode (no server) |
 | Generation | Gemini (free tier), structured answers with citations |
 | Agent | Hand-written ReAct loop, then LangGraph: router, query rewriter, retrieval grader, EMI/FOIR tools |
