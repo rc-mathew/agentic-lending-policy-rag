@@ -104,6 +104,28 @@ def max_loan_by_slabs(collateral_value: float, slabs: list[dict]) -> dict:
             "ltv_actual_pct": round(best / collateral_value * 100, 2)}
 
 
+def format_inr(amount: float, paise: bool = False) -> str:
+    """Rupees with Indian digit grouping: 400000 -> "₹4,00,000", 12345678.5 -> "₹1,23,45,679".
+
+    The last three digits form one group and the rest go in pairs (lakh, crore), unlike the
+    Western 3-3-3 grouping that f"{x:,}" gives. With paise=True two decimals are kept.
+    """
+    if amount is None or math.isnan(amount) or math.isinf(amount):
+        raise ValueError(f"amount must be a finite number, got {amount!r}")
+    sign = "-" if amount < 0 else ""
+    # Half up, as money is rounded; Python's round() sends 0.5 to the even neighbour.
+    value = math.floor(abs(amount) * 100 + 0.5) / 100 if paise else math.floor(abs(amount) + 0.5)
+    whole, _, frac = f"{value:.2f}".partition(".")
+    if len(whole) > 3:
+        head, tail = whole[:-3], whole[-3:]
+        pairs = []
+        while len(head) > 2:
+            pairs.insert(0, head[-2:])
+            head = head[:-2]
+        whole = ",".join([head, *pairs, tail])
+    return f"{sign}₹{whole}" + (f".{frac}" if paise else "")
+
+
 _OPS = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
         ast.Div: operator.truediv, ast.Pow: operator.pow, ast.USub: operator.neg,
         ast.UAdd: operator.pos}

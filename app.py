@@ -151,6 +151,8 @@ if "last" in st.session_state:
             tag = " · REPEALED" if src["repealed"] else ""
             with st.expander(f"[{src['n']}] {src['label']}{tag}"):
                 st.caption(src["section"])
+                if src["readable"]:
+                    st.markdown(f"**{src['readable']}**")
                 st.text(src["text"])
     if v["other_hits"]:
         with st.expander("Also retrieved, not cited"):

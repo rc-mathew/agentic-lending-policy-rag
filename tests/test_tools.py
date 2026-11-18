@@ -140,3 +140,17 @@ def test_slabs_holdout_f01_and_f02_figures():
 def test_slabs_only_one_open_ended_slab():
     slabs = [{"up_to": None, "ltv_pct": 85}, {"up_to": None, "ltv_pct": 75}]
     assert "error" in tools.call_tool("max_loan_by_slabs", {"collateral_value": 1, "slabs": slabs})
+
+
+@pytest.mark.parametrize("amount, shown", [
+    (0, "₹0"), (999, "₹999"), (1_000, "₹1,000"), (400_000, "₹4,00,000"),
+    (7_500_000, "₹75,00,000"), (12_345_678.5, "₹1,23,45,679"), (2.5, "₹3"), (-250_000, "-₹2,50,000"),
+])
+def test_format_inr_uses_indian_grouping(amount, shown):
+    assert tools.format_inr(amount) == shown
+
+
+def test_format_inr_paise_and_bad_input():
+    assert tools.format_inr(17_995.456, paise=True) == "₹17,995.46"
+    with pytest.raises(ValueError):
+        tools.format_inr(float("nan"))

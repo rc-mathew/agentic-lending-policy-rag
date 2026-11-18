@@ -122,3 +122,13 @@ def test_page_stops_when_session_limit_is_used(page, monkeypatch):
     at.run()
     assert "system" not in seen
     assert any("used its free questions" in w.value for w in at.warning)
+
+
+def test_readable_calculation_formats_rupees_only():
+    from policy_rag.demo import readable_calculation
+    assert readable_calculation('emi({"principal": 3500000}) = 34466') == "emi: ₹34,466"
+    assert readable_calculation(
+        'max_loan_by_slabs({}) = {"max_loan": 400000, "ltv_pct_applied": 80}'
+    ) == "max_loan_by_slabs: max_loan: ₹4,00,000, ltv_pct_applied: 80"
+    assert readable_calculation('tenure_for_emi({}) = 192.4') == "tenure_for_emi: 192.4"
+    assert readable_calculation("not a calculator line") == "not a calculator line"

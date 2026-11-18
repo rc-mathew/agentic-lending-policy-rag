@@ -109,6 +109,37 @@ def calls_spent(result) -> int:
     return getattr(result, "calls", 1) or 1
 
 
+# Calculator outputs that are rupee amounts; the rest are months, percentages or ratios.
+_RUPEE_TOOLS = {"emi", "max_loan_for_ltv"}
+_RUPEE_KEYS = {"max_loan"}
+_CALCULATOR = "calculator"  # retrieve.CALCULATOR; not imported, to keep this module light
+
+
+def readable_calculation(text: str) -> str:
+    """Display line for a calculator source: "tool(...) = 400000" -> "tool: ₹4,00,000".
+
+    Page display only. The agents and the scored runs see the raw text, unchanged.
+    """
+    import ast
+
+    from .tools import format_inr
+
+    call, sep, raw = text.partition(" = ")
+    if not sep:
+        return text
+    tool = call.split("(", 1)[0]
+    try:
+        value = ast.literal_eval(raw)
+    except (ValueError, SyntaxError):
+        return text
+    if isinstance(value, dict):
+        parts = [f"{k}: {format_inr(v) if k in _RUPEE_KEYS else v}" for k, v in value.items()]
+        return f"{tool}: " + ", ".join(parts)
+    if isinstance(value, (int, float)) and tool in _RUPEE_TOOLS:
+        return f"{tool}: {format_inr(value)}"
+    return f"{tool}: {value}"
+
+
 def answer_view(result) -> dict:
     """Plain data for the page: verdict text, claims with citations, the sources they cite."""
     blocked = getattr(result, "guardrail", "").startswith("blocked")
@@ -124,6 +155,7 @@ def answer_view(result) -> dict:
                 "repealed": h.status == "repealed",
                 "section": h.context,
                 "text": h.text,
+                "readable": readable_calculation(h.text) if h.doc_id == _CALCULATOR else "",
             })
     return {
         "blocked": blocked,
