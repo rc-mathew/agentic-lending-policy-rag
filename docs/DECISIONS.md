@@ -92,7 +92,12 @@ the order the decisions were made.
   judge call per answered question plus deterministic checks (retrieval hit, page cited,
   abstention), instead of the full RAGAS suite.
 - **Why:** a model grading its own answers is biased toward them, and RAGAS would cost several
-  calls per question on a 500-a-day quota.
+  calls per question on a 500-a-day quota. RAGAS's reference-free metrics (faithfulness,
+  context precision) estimate what this set already has checked by hand: every expected answer
+  and page was verified against the PDF, so the judge compares answers to verified gold, and
+  retrieval hit and page citation are exact checks, not LLM estimates. Revisited after the
+  scored runs and skipped again: about 150 Groq calls for one system on 15 questions, for
+  numbers the gold set already measures.
 - **Cost:** one judge, checked by hand on a few verdicts only. Groq's token limit spreads a
   full run's judging over more than one day.
 
