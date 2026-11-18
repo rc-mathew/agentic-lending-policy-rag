@@ -226,3 +226,7 @@ data/processed/*
 !data/processed/.gitkeep
 .qdrant/
 deploy/index/.lock
+# Local editor settings and scratch outputs
+.vscode/
+data/eval/plain_rag_probe_answers.jsonl
+data/eval/*_truncated.json

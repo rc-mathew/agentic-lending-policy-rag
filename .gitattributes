@@ -1,0 +1,4 @@
+# Store text with LF line endings; Windows checkouts may use CRLF without showing as modified.
+* text=auto
+# Evaluation outputs are kept byte-for-byte as the scripts wrote them.
+data/eval/** -text
