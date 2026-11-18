@@ -271,7 +271,7 @@ Runs on an 8 GB laptop at zero cost.
 | Vector store | Qdrant, local mode (no server) |
 | Generation | Gemini (free tier), structured answers with citations |
 | Agent | Hand-written ReAct loop, then LangGraph: router, query rewriter, retrieval grader, EMI/FOIR tools |
-| Evals | RAGAS + 60-question gold set |
+| Evals | 60-question gold set checked by hand, LLM judge (gpt-oss-120b on Groq), calculation holdouts; RAGAS considered and skipped ([why](docs/DECISIONS.md)) |
 | Observability | LangSmith (opt-in), per-call tokens and latency |
 | Demo | Streamlit, hosted free on Streamlit Community Cloud |
 
