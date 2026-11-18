@@ -119,3 +119,24 @@ def test_agents_can_choose_the_new_tools():
 
     assert "arithmetic" in typing.get_args(react_agent.Action)
     assert "max_loan_by_slabs" in typing.get_args(graph_agent.ToolCall.model_fields["tool"].annotation)
+
+
+@pytest.mark.parametrize("bad_key", ["max", "limit", "upto"])
+def test_slabs_with_a_wrong_key_are_an_error_not_open_ended(bad_key):
+    # Holdout f01: {"limit": ...} was read as no upper bound, giving 85% of ₹5 lakh.
+    slabs = [{bad_key: 250_000, "ltv_pct": 85}, {bad_key: 500_000, "ltv_pct": 80},
+             {bad_key: None, "ltv_pct": 75}]
+    assert "error" in tools.call_tool("max_loan_by_slabs",
+                                      {"collateral_value": 500_000, "slabs": slabs})
+
+
+def test_slabs_holdout_f01_and_f02_figures():
+    gold = [{"up_to": 250_000, "ltv_pct": 85}, {"up_to": 500_000, "ltv_pct": 80},
+            {"up_to": None, "ltv_pct": 75}]
+    assert tools.max_loan_by_slabs(500_000, gold)["max_loan"] == 400_000
+    assert tools.max_loan_by_slabs(10_000_000, HOUSING_SLABS)["max_loan"] == 7_500_000
+
+
+def test_slabs_only_one_open_ended_slab():
+    slabs = [{"up_to": None, "ltv_pct": 85}, {"up_to": None, "ltv_pct": 75}]
+    assert "error" in tools.call_tool("max_loan_by_slabs", {"collateral_value": 1, "slabs": slabs})

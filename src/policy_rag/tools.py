@@ -75,11 +75,20 @@ def max_loan_by_slabs(collateral_value: float, slabs: list[dict]) -> dict:
     _check_positive(collateral_value=collateral_value)
     if not slabs:
         raise ValueError("slabs must not be empty")
+    for s in slabs:
+        # Strict keys: a slab written as {"max": ...} or {"limit": ...} used to read as having
+        # no upper bound, so every slab looked open-ended and the highest LTV won (holdout f01:
+        # 85% of ₹5 lakh = ₹4.25 lakh instead of ₹4 lakh). A wrong key must be an error.
+        if not isinstance(s, dict) or set(s) != {"up_to", "ltv_pct"}:
+            raise ValueError('each slab must have exactly the keys "up_to" (number, or null '
+                             f'for the top slab) and "ltv_pct", got {s!r}')
+    if sum(s["up_to"] is None for s in slabs) > 1:
+        raise ValueError('only the top slab may have "up_to": null')
     try:
-        ordered = sorted(slabs, key=lambda s: math.inf if s.get("up_to") is None else s["up_to"])
+        ordered = sorted(slabs, key=lambda s: math.inf if s["up_to"] is None else s["up_to"])
         best, best_slab, lower = 0.0, None, 0.0
         for s in ordered:
-            up_to = math.inf if s.get("up_to") is None else float(s["up_to"])
+            up_to = math.inf if s["up_to"] is None else float(s["up_to"])
             ltv = float(s["ltv_pct"])
             if not 0 < ltv <= 100:
                 raise ValueError(f"ltv_pct must be in (0, 100], got {ltv}")
@@ -188,13 +197,24 @@ TOOL_SPECS += [
     {
         "name": "max_loan_by_slabs",
         "description": "Largest loan when the LTV cap depends on the loan size (slabs, e.g. "
-                       "housing or gold loans). Pass every slab from the passage.",
+                       "housing or gold loans). Pass every slab from the passage as "
+                       '[{"up_to": <rupees, or null for the top slab>, "ltv_pct": <percent>}]; '
+                       "use exactly those two keys.",
         "parameters": {
             "type": "object",
             "properties": {
                 "collateral_value": {"type": "number"},
-                "slabs": {"type": "array", "description": 'e.g. [{"up_to": 3000000, '
-                          '"ltv_pct": 90}, {"up_to": null, "ltv_pct": 75}]'},
+                "slabs": {
+                    "type": "array",
+                    "description": 'Exactly these keys, e.g. [{"up_to": 3000000, "ltv_pct": 90}, '
+                                   '{"up_to": null, "ltv_pct": 75}]; null only for the top slab.',
+                    "items": {
+                        "type": "object",
+                        "properties": {"up_to": {"type": ["number", "null"]},
+                                       "ltv_pct": {"type": "number"}},
+                        "required": ["up_to", "ltv_pct"],
+                    },
+                },
             },
             "required": ["collateral_value", "slabs"],
         },

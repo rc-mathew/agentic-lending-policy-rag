@@ -5,6 +5,7 @@
     python scripts/evaluate.py --system plain --limit 5         # quick check
     python scripts/evaluate.py --system graph --gold data/eval/calc_holdout.jsonl
     python scripts/evaluate.py --system graph --gold data/eval/calc_holdout.jsonl --calc-mode v1
+    python scripts/evaluate.py --system graph --gold data/eval/calc_holdout.jsonl --tag slabfix
 
 Writes data/eval/results/<system>.jsonl (one row per question) and <system>_summary.json, and
 prints the scores by question type. Calls are cached, so after a quota stop a re-run resumes
@@ -69,6 +70,8 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--calc-mode", choices=["v1", "v2"], default="v2",
                     help="v1 = calculator setup of the scored gold runs (ablation)")
+    ap.add_argument("--tag", default="",
+                    help="extra suffix for the result files, so a re-run keeps earlier results")
     args = ap.parse_args()
     os.environ["CALC_MODE"] = args.calc_mode  # read when the agent modules are imported
 
@@ -100,6 +103,8 @@ def main() -> int:
         name += f"_{args.gold.stem}"
     if args.calc_mode != "v2":
         name += f"_calc{args.calc_mode}"
+    if args.tag:
+        name += f"_{args.tag}"
     with (OUT / f"{name}.jsonl").open("w", encoding="utf-8") as f:
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
@@ -107,7 +112,7 @@ def main() -> int:
     s["meta"] = {"system": args.system, "retriever": args.retriever, "items": len(rows),
                  "of": len(items),
                  "drafts_included": args.include_drafts, "gold": args.gold.name,
-                 "calc_mode": args.calc_mode}
+                 "calc_mode": args.calc_mode, "tag": args.tag}
     (OUT / f"{name}_summary.json").write_text(json.dumps(s, indent=2), encoding="utf-8")
 
     print(f"\n{args.system}: {len(rows)} of {len(items)} questions"
