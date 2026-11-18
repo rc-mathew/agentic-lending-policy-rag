@@ -118,6 +118,14 @@ With 10 questions, one question is 10 points; read these as direction, not preci
 table is the clean holdout result. The slab-key fix was found on these same questions, so a
 re-run after it is a check that the bug is gone, not a new score.
 
+**Re-run after the slab-key fix (`--tag slabfix`, a bug check, not a new score):** f01 and f02
+now come out right in both agents (₹4 lakh, ₹75 lakh), and no other answer changed. LangGraph
+95% correct / 100% citation, ReAct 90% / 100%. The one remaining miss is f08 (an EMI reset):
+the LangGraph agent computed both EMIs and the new tenure, then answered only with RBI's list
+of options and left every figure out; ReAct never called a calculator. That is the g50 failure
+again, so numbered calculator sources were not the whole fix for questions that ask for
+"options". It stays open: fixing it on these questions would tune to the holdout.
+
 Why each design choice was made, with the evidence: [`docs/DECISIONS.md`](docs/DECISIONS.md). Rules for AI coding assistants working in this repo: [`AGENTS.md`](AGENTS.md).
 
 ## Chunking: section-aware, chosen on a 15-question probe

@@ -121,6 +121,10 @@ the order the decisions were made.
   LangGraph). The agents never saw the key names: the tool list in their prompt shows only
   parameter names and the description. Fix: the keys are in the description, and any other key
   is an error, not a default. A tool that guesses at bad input fails silently and fluently.
+  Re-run after the fix (a bug check, since the bug was found on these questions): f01 and f02
+  right in both agents, nothing else changed.
+- **Still open:** f08 (EMI reset). The agent computed the figures and still answered with the
+  list of options only, the g50 pattern. Not fixed on the holdout; needs new questions to judge.
 
 ## 12. Live-data questions are routed away before searching (after the scored runs)
 
